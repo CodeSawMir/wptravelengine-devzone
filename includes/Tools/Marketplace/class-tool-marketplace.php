@@ -83,9 +83,9 @@ class ToolMarketplace extends AbstractTool {
 			set_transient( self::LIST_TRANSIENT, $list_cached, HOUR_IN_SECONDS );
 		}
 
-		// T4 — include from warm cache; signal pending if cold so JS can lazy-load.
-		$t4_cached     = $has_token ? get_transient( self::TIER4_TRANSIENT ) : false;
-		$tier4_pending = $has_token && false === $t4_cached;
+		// T4 — fetch topic-tagged repos (works without token for public repos).
+		$t4_cached     = get_transient( self::TIER4_TRANSIENT );
+		$tier4_pending = false === $t4_cached;
 		$merged        = false !== $t4_cached
 			? $this->merge_plugins( $list_cached, [], [], $t4_cached )
 			: $list_cached;
