@@ -27,6 +27,32 @@ $label     = strtoupper( $tool->get_label() );
 					echo esc_attr( sprintf( __( 'Search %s…', 'wptravelengine-devzone' ), $noun ) );
 				?>">
 		</div>
+		<?php $toolbar_actions = $tool->get_toolbar_actions(); ?>
+		<?php if ( ! empty( $toolbar_actions ) ) : ?>
+		<div class="wte-dbg-ei-toolbar">
+			<?php if ( in_array( 'export', $toolbar_actions, true ) ) : ?>
+			<button type="button" class="wte-dbg-ei-btn wte-dbg-ei-select-btn" aria-label="<?php esc_attr_e( 'Select trips to export', 'wptravelengine-devzone' ); ?>">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+				<span class="wte-dbg-ei-select-label"><?php esc_html_e( 'SELECT TO EXPORT', 'wptravelengine-devzone' ); ?></span>
+				<span class="wte-dbg-ei-export-label" aria-hidden="true"><?php esc_html_e( 'EXPORT', 'wptravelengine-devzone' ); ?>&nbsp;(<span class="wte-dbg-ei-count">0</span>)</span>
+			</button>
+			<button type="button" class="wte-dbg-ei-cancel-btn" aria-label="<?php esc_attr_e( 'Cancel export selection', 'wptravelengine-devzone' ); ?>" title="<?php esc_attr_e( 'Cancel', 'wptravelengine-devzone' ); ?>">&#x2715;</button>
+			<?php endif; ?>
+			<?php if ( in_array( 'import', $toolbar_actions, true ) ) : ?>
+			<button type="button" class="wte-dbg-ei-btn wte-dbg-ei-import-btn" aria-label="<?php esc_attr_e( 'Import trips from JSON', 'wptravelengine-devzone' ); ?>">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+				<?php esc_html_e( 'IMPORT', 'wptravelengine-devzone' ); ?>
+			</button>
+			<input type="file" class="wte-dbg-ei-file-input" accept=".json" aria-hidden="true" tabindex="-1">
+			<?php endif; ?>
+		</div>
+		<div class="wte-dbg-ei-select-all-row">
+			<label class="wte-dbg-ei-select-all-label">
+				<input type="checkbox" class="wte-dbg-ei-select-all-cb">
+				<span><?php esc_html_e( 'SELECT ALL', 'wptravelengine-devzone' ); ?></span>
+			</label>
+		</div>
+		<?php endif; ?>
 		<div class="wte-dbg-list-items">
 			<p class="wte-dbg-loading"><?php esc_html_e( 'Loading…', 'wptravelengine-devzone' ); ?></p>
 		</div>

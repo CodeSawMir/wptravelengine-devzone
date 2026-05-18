@@ -4824,3 +4824,252 @@ textarea.wte-dbg-input {
 .wte-dbg-wp-skel-log-line {
 	height: 12px;
 }
+
+
+/* ==========================================================================
+   Export / Import Toolbar — Trips (and any future post-type tools)
+   ========================================================================== */
+
+/* Toolbar row — sits between search box and the list items */
+.wte-dbg-ei-toolbar {
+	display: flex;
+	gap: 6px;
+	padding: 0 10px 8px;
+	flex-shrink: 0;
+}
+
+/* Hide the toolbar when the sidebar is collapsed — !important beats is-export-mode specificity */
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-ei-toolbar,
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-ei-select-all-row {
+	display: none !important;
+}
+
+/* Also hide individual checkboxes when collapsed */
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-ei-cb {
+	display: none !important;
+}
+
+/* Shared button base */
+.wte-dbg-ei-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	height: 28px;
+	padding: 0 10px;
+	border-radius: 4px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	cursor: pointer;
+	border: 1.5px solid transparent;
+	transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+	flex-shrink: 0;
+	line-height: 1;
+	font-family: inherit;
+}
+
+.wte-dbg-ei-btn svg {
+	flex-shrink: 0;
+	pointer-events: none;
+}
+
+/* "SELECT TO EXPORT" / "EXPORT (N)" — primary outline style */
+.wte-dbg-ei-select-btn {
+	background: transparent;
+	border-color: var(--dbg-accent);
+	color: var(--dbg-accent);
+	flex: 1 1 0;
+	justify-content: center;
+}
+
+.wte-dbg-ei-select-btn:hover {
+	background: var(--dbg-active-bg);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--dbg-accent) 20%, transparent);
+}
+
+/* In export mode: show export label, hide select label */
+.wte-dbg-ei-select-label {
+	display: inline;
+}
+
+.wte-dbg-ei-export-label {
+	display: none;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-label {
+	display: none;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-export-label {
+	display: inline;
+}
+
+/* Cancel button — only visible in export mode */
+.wte-dbg-ei-cancel-btn {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border-radius: 50%;
+	border: 1.5px solid var(--dbg-border);
+	background: transparent;
+	color: var(--dbg-text-muted);
+	font-size: 14px;
+	line-height: 1;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.wte-dbg-ei-cancel-btn:hover {
+	background: #fef2f2;
+	border-color: #f87171;
+	color: #dc2626;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-cancel-btn:hover {
+	background: #2d1515;
+	border-color: #f87171;
+	color: #f87171;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-cancel-btn {
+	display: flex;
+}
+
+/* In export mode: button turns solid accent */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn {
+	background: var(--dbg-accent);
+	border-color: var(--dbg-accent);
+	color: #fff;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn:hover {
+	background: var(--dbg-accent-dark);
+	border-color: var(--dbg-accent-dark);
+}
+
+/* Dark mode overrides for solid button text */
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn {
+	background: var(--dbg-accent);
+	color: #0d1b2a;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn:hover {
+	background: var(--dbg-accent-dark);
+	color: #0d1b2a;
+}
+
+/* "IMPORT" button — neutral ghost style */
+.wte-dbg-ei-import-btn {
+	background: transparent;
+	border-color: var(--dbg-border);
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-ei-import-btn:hover {
+	background: var(--dbg-hover-bg);
+	border-color: var(--dbg-text-muted);
+	color: var(--dbg-text);
+}
+
+/* Hidden native file input */
+.wte-dbg-ei-file-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* SELECT ALL row — shown only in export mode */
+.wte-dbg-ei-select-all-row {
+	display: none;
+	align-items: center;
+	padding: 4px 12px 6px 12px;
+	border-bottom: 1px solid var(--dbg-border-faint);
+	flex-shrink: 0;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-all-row {
+	display: flex;
+}
+
+.wte-dbg-ei-select-all-label {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--dbg-text-muted);
+	user-select: none;
+}
+
+.wte-dbg-ei-select-all-label:hover {
+	color: var(--dbg-text);
+}
+
+/* Export checkboxes on list items — hidden by default */
+.wte-dbg-list-item .wte-dbg-ei-cb {
+	display: none;
+	/* Let the browser render the native checkbox at its natural size so the
+	   tick mark sits correctly — no forced width/height. */
+	margin: 0 8px 0 0;
+	cursor: pointer;
+	flex-shrink: 0;
+	accent-color: var(--dbg-accent);
+	vertical-align: middle;
+}
+
+/* In export mode: reduce item left padding so the checkbox + content
+   align flush with the SELECT ALL row above. */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item {
+	padding-left: 12px;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item .wte-dbg-ei-cb {
+	display: block;
+}
+
+/* In export mode: pin button hides to give room for checkbox */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item .wte-dbg-pin-btn {
+	display: none;
+}
+
+/* In export mode: clicking a row highlights it as selected */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item:has(.wte-dbg-ei-cb:checked) {
+	background: var(--dbg-active-bg);
+}
+
+/* Dark mode: checkbox accent & label */
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-select-btn {
+	border-color: var(--dbg-accent);
+	color: var(--dbg-accent);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-import-btn {
+	border-color: var(--dbg-border);
+	color: var(--dbg-text-muted);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-import-btn:hover {
+	background: var(--dbg-hover-bg);
+	border-color: var(--dbg-text-muted);
+	color: var(--dbg-text);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-list-item .wte-dbg-ei-cb {
+	accent-color: var(--dbg-accent);
+}
+
+/* Ensure dark-mode form-element override doesn't stomp the checkbox */
+.wte-devzone-wrap.wte-dbg-dark input[type="checkbox"].wte-dbg-ei-cb,
+.wte-devzone-wrap.wte-dbg-dark input[type="checkbox"].wte-dbg-ei-select-all-cb {
+	background-color: unset;
+}

@@ -74,6 +74,8 @@ export class MasterDetailTab {
 		this._currentSearch        = '';
 		this._currentPage          = 1;
 		this._reloadList           = null;
+		this._exportMode           = false;
+		this._selectedIds          = new Set();
 		this.editor                = new InlineEditor(
 			() => this.currentPostId,
 			() => this.postType
@@ -115,11 +117,14 @@ export class MasterDetailTab {
 		if ( restoreOnly ) {
 			// Re-attach click listeners to existing rendered items without hitting AJAX.
 			listEl?.querySelectorAll( '.wte-dbg-list-item' ).forEach( ( item ) => {
-				item.addEventListener( 'click', () => {
+				item.addEventListener( 'click', ( e ) => {
+					if ( e.target.closest( '.wte-dbg-ei-cb' ) ) return;
 					listEl.querySelectorAll( '.wte-dbg-list-item' ).forEach( ( i ) => i.classList.remove( 'is-active' ) );
 					item.classList.add( 'is-active' );
 					this._loadInspector( parseInt( item.dataset.postId, 10 ), inspector );
 				} );
+				const cb = item.querySelector( '.wte-dbg-ei-cb' );
+				if ( cb ) this._attachCheckboxHandler( cb );
 			} );
 			const activeItem = listEl?.querySelector( '.wte-dbg-list-item.is-active' );
 			if ( activeItem ) this.currentPostId = parseInt( activeItem.dataset.postId, 10 ) || null;
@@ -247,7 +252,190 @@ export class MasterDetailTab {
 			} );
 		}
 
+		this._initExportImportToolbar( panel, listEl );
+
 		return this;
+	}
+
+	// -------------------------------------------------------------------------
+	// Export / Import
+	// -------------------------------------------------------------------------
+
+	_initExportImportToolbar( panel, listEl ) {
+		const selectBtn   = panel.querySelector( '.wte-dbg-ei-select-btn' );
+		const cancelBtn   = panel.querySelector( '.wte-dbg-ei-cancel-btn' );
+		const importBtn   = panel.querySelector( '.wte-dbg-ei-import-btn' );
+		const fileInput   = panel.querySelector( '.wte-dbg-ei-file-input' );
+		const selectAllCb = panel.querySelector( '.wte-dbg-ei-select-all-cb' );
+
+		if ( ! selectBtn && ! importBtn ) return;
+
+		if ( selectBtn ) {
+			selectBtn.addEventListener( 'click', () => {
+				if ( this._exportMode ) {
+					this._doExport( panel );
+				} else {
+					this._enterExportMode( panel, listEl, selectAllCb );
+				}
+			} );
+		}
+
+		if ( cancelBtn ) {
+			cancelBtn.addEventListener( 'click', () => this._exitExportMode( panel ) );
+		}
+
+		if ( importBtn && fileInput ) {
+			importBtn.addEventListener( 'click', () => fileInput.click() );
+			fileInput.addEventListener( 'change', () => {
+				const file = fileInput.files && fileInput.files[0];
+				if ( ! file ) return;
+				this._readAndImport( file, panel );
+				fileInput.value = '';
+			} );
+		}
+
+		if ( selectAllCb ) {
+			selectAllCb.addEventListener( 'change', () => {
+				const checked = selectAllCb.checked;
+				listEl.querySelectorAll( '.wte-dbg-ei-cb' ).forEach( ( cb ) => {
+					cb.checked = checked;
+					const postId = parseInt( cb.closest( '.wte-dbg-list-item' )?.dataset.postId, 10 );
+					if ( postId ) {
+						checked ? this._selectedIds.add( postId ) : this._selectedIds.delete( postId );
+					}
+				} );
+				this._syncExportCount( panel );
+			} );
+		}
+	}
+
+	_enterExportMode( panel, listEl, selectAllCb ) {
+		this._exportMode = true;
+		this._selectedIds.clear();
+		panel.classList.add( 'is-export-mode' );
+		this._syncExportCount( panel );
+		if ( selectAllCb ) selectAllCb.checked = false;
+
+		// Attach checkbox change handlers to items already in the list.
+		listEl.querySelectorAll( '.wte-dbg-ei-cb' ).forEach( ( cb ) => {
+			this._attachCheckboxHandler( cb );
+		} );
+	}
+
+	_exitExportMode( panel ) {
+		this._exportMode = false;
+		this._selectedIds.clear();
+		panel.classList.remove( 'is-export-mode' );
+		const selectAllCb = panel.querySelector( '.wte-dbg-ei-select-all-cb' );
+		if ( selectAllCb ) selectAllCb.checked = false;
+		panel.querySelectorAll( '.wte-dbg-ei-cb' ).forEach( ( cb ) => { cb.checked = false; } );
+		this._syncExportCount( panel );
+	}
+
+	_syncExportCount( panel ) {
+		const countEl = panel.querySelector( '.wte-dbg-ei-count' );
+		if ( countEl ) countEl.textContent = this._selectedIds.size;
+	}
+
+	_attachCheckboxHandler( cb ) {
+		if ( cb.dataset.handlerAttached ) return;
+		cb.dataset.handlerAttached = '1';
+		cb.addEventListener( 'change', () => {
+			const postId = parseInt( cb.closest( '.wte-dbg-list-item' )?.dataset.postId, 10 );
+			if ( ! postId ) return;
+			cb.checked ? this._selectedIds.add( postId ) : this._selectedIds.delete( postId );
+			const panel = this.contentEl.querySelector( '.wte-dbg-master-detail' );
+			if ( panel ) this._syncExportCount( panel );
+		} );
+	}
+
+	_doExport( panel ) {
+		if ( this._selectedIds.size === 0 ) {
+			DomHelper.setStatus( 'Select at least one trip to export.', 'error', 3 );
+			return;
+		}
+
+		DomHelper.setStatus( 'Exporting\u2026', 'loading' );
+
+		const body = new URLSearchParams( {
+			action:      'wpte_devzone_export_trips',
+			ids:         Array.from( this._selectedIds ).join( ',' ),
+			_ajax_nonce: nonce,
+		} );
+
+		fetch( ajaxurl, { method: 'POST', body } )
+			.then( ( r ) => r.json() )
+			.then( ( res ) => {
+				if ( ! res.success ) {
+					DomHelper.setStatus( 'Export failed: ' + ( res.data?.message || 'Unknown error' ), 'error', 5 );
+					return;
+				}
+
+				const json     = JSON.stringify( res.data, null, 2 );
+				const blob     = new Blob( [ json ], { type: 'application/json' } );
+				const url      = URL.createObjectURL( blob );
+				const a        = document.createElement( 'a' );
+				const date     = new Date().toISOString().slice( 0, 10 );
+				a.href         = url;
+				a.download     = `wte-trips-export-${date}.json`;
+				a.style.display = 'none';
+				document.body.appendChild( a );
+				a.click();
+				document.body.removeChild( a );
+				URL.revokeObjectURL( url );
+
+				DomHelper.setStatus(
+					res.data.trips.length + ' trip(s) exported.',
+					'success',
+					4
+				);
+				this._exitExportMode( panel );
+			} )
+			.catch( () => {
+				DomHelper.setStatus( 'Export request failed.', 'error', 5 );
+			} );
+	}
+
+	_readAndImport( file, panel ) {
+		const reader = new FileReader();
+		reader.onload = ( e ) => {
+			const json = e.target.result;
+			let data;
+			try {
+				data = JSON.parse( json );
+			} catch ( err ) {
+				DomHelper.setStatus( 'Invalid JSON file.', 'error', 5 );
+				return;
+			}
+			this._sendImport( json, panel );
+		};
+		reader.readAsText( file );
+	}
+
+	_sendImport( jsonString, panel ) {
+		DomHelper.setStatus( 'Importing\u2026', 'loading' );
+
+		const body = new URLSearchParams( {
+			action:      'wpte_devzone_import_trips',
+			data:        jsonString,
+			_ajax_nonce: nonce,
+		} );
+
+		fetch( ajaxurl, { method: 'POST', body } )
+			.then( ( r ) => r.json() )
+			.then( ( res ) => {
+				if ( ! res.success ) {
+					DomHelper.setStatus( 'Import failed: ' + ( res.data?.message || 'Unknown error' ), 'error', 6 );
+					return;
+				}
+				DomHelper.setStatus( res.data.message, 'success', 6 );
+				if ( res.data.created.length > 0 && this._reloadList ) {
+					this._reloadList();
+				}
+			} )
+			.catch( () => {
+				DomHelper.setStatus( 'Import request failed.', 'error', 5 );
+			} );
 	}
 
 	destroy() {
@@ -286,7 +474,20 @@ export class MasterDetailTab {
 		} );
 
 		const addItemListener = ( item ) => {
-			item.addEventListener( 'click', () => {
+			item.addEventListener( 'click', ( e ) => {
+				// Let the checkbox handle its own state; don't open the inspector.
+				if ( e.target.closest( '.wte-dbg-ei-cb' ) ) return;
+
+				if ( this._exportMode ) {
+					// In export mode, clicking an item toggles its checkbox.
+					const cb = item.querySelector( '.wte-dbg-ei-cb' );
+					if ( cb ) {
+						cb.checked = ! cb.checked;
+						cb.dispatchEvent( new Event( 'change' ) );
+					}
+					return;
+				}
+
 				listEl.querySelectorAll( '.wte-dbg-list-item' ).forEach( ( i ) => i.classList.remove( 'is-active' ) );
 				item.classList.add( 'is-active' );
 				this._loadInspector( parseInt( item.dataset.postId, 10 ), inspector );
@@ -366,6 +567,15 @@ export class MasterDetailTab {
 		const item = document.createElement( 'div' );
 		item.className = 'wte-dbg-list-item' + ( isPinned ? ' is-pinned' : '' );
 		item.dataset.postId = post.id;
+
+		// Export checkbox — always present, visible only in export mode (via CSS).
+		const cb = document.createElement( 'input' );
+		cb.type      = 'checkbox';
+		cb.className = 'wte-dbg-ei-cb';
+		cb.setAttribute( 'aria-label', 'Select ' + post.title );
+		cb.checked   = this._selectedIds.has( post.id );
+		this._attachCheckboxHandler( cb );
+		item.appendChild( cb );
 
 		const content = document.createElement( 'div' );
 		content.className = 'wte-dbg-list-item-content';

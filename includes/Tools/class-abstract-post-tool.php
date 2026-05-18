@@ -37,6 +37,16 @@ abstract class AbstractPostTool extends AbstractTool {
 		return $this->get_label();
 	}
 
+	/**
+	 * Return toolbar action slugs for this post type tool.
+	 * Override in concrete tools to enable toolbar buttons above the list.
+	 *
+	 * @return string[]  e.g. ['export', 'import']
+	 */
+	public function get_toolbar_actions(): array {
+		return [];
+	}
+
 	/** All post tools share a single template. */
 	final public function get_template(): string {
 		return WPTE_DEVZONE_DIR . 'templates/tab-post-master-detail.php';
