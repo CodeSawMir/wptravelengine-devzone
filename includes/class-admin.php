@@ -11,6 +11,9 @@ class Admin {
 	public const PAGE_SLUG = 'wptravelengine-devzone';
 	public const NONCE     = 'wpte_devzone_nonce';
 
+	/** SVG icon path for the Dev Zone — circuit-board style, currentColor fill. */
+	private const ICON_PATH = 'M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C13.03 5.06 12.52 5 12 5c-.52 0-1.03.06-1.52.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z';
+
 	/**
 	 * Cached result of get_dev_features().
 	 *
@@ -34,6 +37,8 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'maybe_show_activation_pointer' ] );
 		add_action( 'current_screen', [ $this, 'suppress_notices_on_our_page' ] );
+		add_action( 'admin_bar_menu', [ $this, 'add_toolbar_node' ], 100 );
+		add_action( 'admin_head', [ $this, 'add_toolbar_styles' ] );
 
 		( new SharedAjax( $tools ) )->register();
 		( new Tools\ToolBeautifier() )->register();
@@ -51,6 +56,11 @@ class Admin {
 	 */
 	public static function get_tabs(): array {
 		$tabs = apply_filters( 'wpte_devzone_tabs', [
+			'marketplace' => [
+				'title' => __( 'Market', 'wptravelengine-devzone' ),
+				'priority' => 2,
+				'on_dev' => true,
+			],
 			// 'perf'    => [
 			// 	'title'  => __( 'Perf', 'wptravelengine-devzone' ),
 			// 	'on_dev' => true,
@@ -71,7 +81,7 @@ class Admin {
 				'title'    => __( 'Logs', 'wptravelengine-devzone' ),
 				'priority' => 10,
 				'subtabs'  => [
-					// 'wordpress'      => [ 'title' => __( 'WordPress', 'wptravelengine-devzone' ), 'on_dev' => true ],
+					'wordpress'      => [ 'title' => __( 'WordPress', 'wptravelengine-devzone' ), 'on_dev' => true ],
 					'wptravelengine' => __( 'WP Travel Engine', 'wptravelengine-devzone' ),
 				],
 			]
@@ -151,6 +161,30 @@ class Admin {
 		remove_all_actions( 'all_admin_notices' );
 		remove_all_actions( 'user_admin_notices' );
 		remove_all_actions( 'network_admin_notices' );
+	}
+
+	public function add_toolbar_node( \WP_Admin_Bar $wp_admin_bar ): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"'
+			. ' fill="currentColor" class="wte-dz-abicon" aria-hidden="true">'
+			. '<path d="' . self::ICON_PATH . '"/>'
+			. '</svg>';
+
+		$wp_admin_bar->add_node( [
+			'id'    => 'wpte-devzone',
+			'title' => $svg . esc_html__( 'Dev Zone', 'wptravelengine-devzone' ),
+			'href'  => admin_url( 'tools.php?page=' . self::PAGE_SLUG ),
+			'meta'  => [ 'title' => __( 'WP Travel Engine Dev Zone', 'wptravelengine-devzone' ) ],
+		] );
+	}
+
+	public function add_toolbar_styles(): void {
+		if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		echo '<style>#wpadminbar #wp-admin-bar-wpte-devzone .ab-item .wte-dz-abicon{vertical-align:middle;margin:-2px 4px 0 0;}</style>';
 	}
 
 	public function register_menu(): void {
@@ -267,7 +301,7 @@ class Admin {
 		add_filter(
 			'script_loader_tag',
 			static function ( $tag, $handle ) {
-				if ( 'wpte-devzone' === $handle || 'wpte-devzone-search' === $handle ) {
+				if ( 'wpte-devzone' === $handle || 'wpte-devzone-search' === $handle || 'wpte-devzone-marketplace' === $handle ) {
 					return str_replace( ' src=', ' type="module" src=', $tag );
 				}
 				return $tag;

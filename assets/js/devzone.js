@@ -7,6 +7,7 @@ import { MasterDetailTab } from './tabs/master-detail-tab.js';
 import { LogsTab }         from './tabs/logs-tab.js';
 import { CronTab }         from './tabs/cron-tab.js';
 import { PerfTab }         from './tabs/perf-tab.js';
+import { MarketplaceTab }  from './tabs/marketplace-tab.js';
 import { NavManager }      from './nav-manager.js';
 import { TabLoader }       from './tab-loader.js';
 import { initThemeToggle, initDevModeToggle, initMetaCollapse } from './header-controls.js';
@@ -21,8 +22,9 @@ const TAB_REGISTRY = {
 	customers: ( el, id, restored ) => new MasterDetailTab( 'customer',     el, restored ? null : id, ( s, pid ) => loader.navigateTo( s, pid ) ).init( restored ),
 	wptravelengine: ( el ) => new LogsTab( el, ( slug, extra ) => loader.loadTab( slug, extra ) ).init(),
 	wordpress:      ( el ) => LogsTab.initWordpress( el ),
-	cron:      ( el )      => new CronTab( el ).init(),
-	perf:      ( el )      => new PerfTab( el ).init(),
+	cron:        ( el )    => new CronTab( el ).init(),
+	perf:        ( el )    => new PerfTab( el ).init(),
+	marketplace: ( el )    => new MarketplaceTab( el ).init(),
 	// query: handled by window.wpteDbgInitSearch() in tabs/query.js
 };
 

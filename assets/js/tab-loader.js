@@ -12,7 +12,7 @@ const TAB_KEY = 'wte_dbg_tab';
 const TAB_LABELS = {
 	overview: 'settings', trips: 'trips', bookings: 'bookings',
 	payments: 'payments', customers: 'customers', logs: 'logs',
-	query: 'query', cron: 'cron', perf: 'performance',
+	query: 'query', cron: 'cron', perf: 'performance', marketplace: 'marketplace',
 };
 
 export class TabLoader {
