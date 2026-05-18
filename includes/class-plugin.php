@@ -40,7 +40,7 @@ class Plugin {
 	}
 
 	private function boot(): void {
-		// Tools\Logs\ToolWordpressLogs::apply_debug_flags();
+		Tools\Logs\ToolWordpressLogs::apply_debug_flags();
 
 		$tools = apply_filters( 'wpte_devzone_tools', [
 			new Tools\Inspector\ToolOverview(),
@@ -50,9 +50,10 @@ class Plugin {
 			new Tools\Inspector\ToolCustomers(),
 			new Tools\Inspector\ToolQuery(),
 			new Tools\Logs\ToolWpteLogs(),
-			// new Tools\Logs\ToolWordpressLogs(),
+			new Tools\Logs\ToolWordpressLogs(),
 			new Tools\Cron\ToolCron(),
 			// new Tools\Perf\ToolPerf(),
+			new Tools\Marketplace\ToolMarketplace(),
 		] );
 
 		new Admin( $tools );

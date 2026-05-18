@@ -34,9 +34,97 @@ Once activated, navigate to **Tools → Dev Zone** in WP Admin.
 | Bookings | View booking records and their metadata |
 | Payments | Inspect payment entries linked to bookings |
 | Customers | View customer records |
+| Marketplace | Discover and install WP Travel Engine add-on plugins from GitHub — curated registry, public search, and private org repos via a GitHub token |
 | Logs — WPTE | Browse WP Travel Engine debug log entries with live-reload and line count |
 | Crontrol | List all scheduled WP-Cron events grouped by WPTE vs. other; run or schedule individual hooks; paginate and search |
 | Query | Full table browser — select any DB table, apply column filters, paginate results, and copy cell values with a single click |
+
+## Marketplace Tab
+
+The Marketplace tab lets you browse, filter, and install WP Travel Engine add-on plugins directly from GitHub without leaving WP Admin.
+
+### Plugin discovery — four tiers
+
+Plugins are discovered from up to four sources and merged into a single deduplicated list (highest priority wins on slug conflict):
+
+| Tier | Source | Token required |
+|------|--------|---------------|
+| T1 | Curated `plugins.json` registry hosted on GitHub | No |
+| T2 | GitHub repository name-prefix search (`wpte-devzone-addon-*`) | No |
+| T3 | WordPress filter `wpte_devzone_marketplace_plugins` | No |
+| T4 | GitHub repositories with the `wpte-devzone-compatible` topic | No (private repos need token) |
+
+Results are cached for one hour. Click the **↻ Refresh** button to bust all caches and re-fetch.
+
+### Installation priority
+
+When you click **Install** on a marketplace plugin, the installer:
+
+1. Looks for the latest git tag whose name starts with `wpte-devzone-compatible` — if found, downloads that tag's zip (pinned release)
+2. Falls back to the default branch zip if no such tag exists
+
+### Connecting a GitHub account (Connect Github)
+
+A **Connect Github** button appears in the marketplace toolbar. Click it to open the token panel.
+
+**Without a token** — Tier 1, Tier 2, Tier 3, and any *public* Tier 4 repos are shown.
+
+**With a token** — the button label changes to **Connected Github** and private repositories with the `wpte-devzone-compatible` topic become visible (requires `repo` scope on the PAT).
+
+#### Setting up a GitHub Personal Access Token (PAT)
+
+1. Go to [GitHub → New Personal Access Token](https://github.com/settings/tokens/new?scopes=repo,read:org) (pre-selects `repo` and `read:org` scopes)
+2. Generate a **classic** token (or a fine-grained token scoped to the relevant organisations)
+3. Grant the `repo` scope — required to read private repository contents and tags
+4. Copy the token (starts with `ghp_`)
+5. In the **Connect Github** panel, paste the token into the input field and click **Save**
+6. Click **Test** to verify the token — a success message shows your GitHub username
+7. The grid refreshes automatically and any compatible private org repos appear
+
+To revoke access, click **Clear** in the token panel. The token is removed and the grid reloads without private repos.
+
+### Filters
+
+| Filter | Shows |
+|--------|-------|
+| All | Every discovered plugin |
+| Official | Tier 1 curated registry only (`source: registry`) |
+| Installed | Plugins already present on this WordPress install |
+
+The search field filters by name, description, author, and tags in real time.
+
+### Publishing a plugin to the marketplace
+
+Third-party developers can get their plugin listed without any changes to this plugin:
+
+**Option A — Automatic (name prefix)**
+Name your public GitHub repository with the prefix `wpte-devzone-addon-` (e.g. `wpte-devzone-addon-stripe`). It will appear automatically via Tier 2 search.
+
+**Option B — Curated registry**
+Submit a pull request to the central `wptravelengine/marketplace` repository adding your plugin entry to `plugins.json`.
+
+**Option C — WordPress filter**
+Hook `wpte_devzone_marketplace_plugins` in your plugin and append your entry:
+
+```php
+add_filter( 'wpte_devzone_marketplace_plugins', function ( array $plugins ): array {
+    $plugins[] = [
+        'slug'        => 'my-addon',
+        'name'        => 'My Add-on',
+        'description' => 'Adds extra functionality to WP Travel Engine.',
+        'author'      => 'My Company',
+        'author_url'  => 'https://example.com',
+        'github_repo' => 'myorg/my-addon',
+        'featured'    => false,
+    ];
+    return $plugins;
+} );
+```
+
+**Option D — GitHub topic (Tier 4)**
+Add the topic `wpte-devzone-compatible` to any repository (repo homepage → About ⚙ → Topics). Public repos appear for all users immediately; private repos appear for users who have connected a PAT with `repo` scope. Optionally push a git tag starting with `wpte-devzone-compatible` to pin installs to a specific release — otherwise the default branch is installed.
+
+---
 
 ## Query Tab
 
