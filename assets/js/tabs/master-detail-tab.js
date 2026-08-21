@@ -461,6 +461,7 @@ export class MasterDetailTab {
 
 		DomHelper.setTextContent( listEl, '' );
 		DomHelper.appendShimmer( listEl, 6, 'Loading ' + this.postType + ' list\u2026' );
+		DomHelper.setStatus( 'Loading ' + this.postType + ' list\u2026', 'info' );
 
 		const pinnedIds = this._getPinnedIds();
 
@@ -498,12 +499,13 @@ export class MasterDetailTab {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				DomHelper.setTextContent( listEl, '' );
-				DomHelper.clearStatus();
 
 				if ( ! res.success ) {
 					listEl.appendChild( DomHelper.makePara( 'wte-dbg-empty', 'Error: ' + ( res.data && res.data.message ? res.data.message : 'Unknown' ) ) );
+					DomHelper.setStatus( 'Failed to load ' + this.postType + ' list', 'error', 2 );
 					return;
 				}
+				DomHelper.setStatus( this.postType.charAt( 0 ).toUpperCase() + this.postType.slice( 1 ) + ' list loaded', 'success', 2 );
 
 				const pinned     = res.data.pinned || [];
 				const pinnedIds  = new Set( pinned.map( ( p ) => p.id ) );
@@ -554,12 +556,12 @@ export class MasterDetailTab {
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 ' + this.postType + ' list', 'cancelled' );
+					DomHelper.setStatus( 'Cancelled \u2014 ' + this.postType + ' list', 'cancelled', 2 );
 					return;
 				}
 				DomHelper.setTextContent( listEl, '' );
-				DomHelper.clearStatus();
 				listEl.appendChild( DomHelper.makePara( 'wte-dbg-empty', 'Request failed.' ) );
+				DomHelper.setStatus( 'Request failed', 'error', 2 );
 			} );
 	}
 
@@ -640,6 +642,7 @@ export class MasterDetailTab {
 
 		DomHelper.setTextContent( inspector, '' );
 		DomHelper.appendShimmer( inspector, 4, 'Loading inspector\u2026' );
+		DomHelper.setStatus( 'Loading inspector\u2026', 'info' );
 
 		if ( this._relSidebarBody ) {
 			DomHelper.setTextContent( this._relSidebarBody, '' );
@@ -656,28 +659,29 @@ export class MasterDetailTab {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				DomHelper.setTextContent( inspector, '' );
-				DomHelper.clearStatus();
 
 				if ( ! res.success ) {
 					const err = document.createElement( 'div' );
 					err.className = 'wte-dbg-error-notice';
 					err.textContent = 'Error: ' + ( res.data && res.data.message ? res.data.message : 'Unknown' );
 					inspector.appendChild( err );
+					DomHelper.setStatus( 'Failed to load inspector', 'error', 2 );
 					return;
 				}
 				this._renderInspector( res.data, inspector );
+				DomHelper.setStatus( 'Inspector loaded', 'success', 2 );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 ' + this.postType + ' inspector', 'cancelled' );
+					DomHelper.setStatus( 'Cancelled \u2014 ' + this.postType + ' inspector', 'cancelled', 2 );
 					return;
 				}
 				DomHelper.setTextContent( inspector, '' );
-				DomHelper.clearStatus();
 				const errEl = document.createElement( 'div' );
 				errEl.className = 'wte-dbg-error-notice';
 				errEl.textContent = 'Request failed.';
 				inspector.appendChild( errEl );
+				DomHelper.setStatus( 'Request failed', 'error', 2 );
 			} );
 	}
 
@@ -869,27 +873,28 @@ export class MasterDetailTab {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				DomHelper.setTextContent( sidebarBody, '' );
-				DomHelper.clearStatus();
 				if ( ! res.success ) {
 					const errEl = document.createElement( 'div' );
 				errEl.className = 'wte-dbg-relation-empty';
 				errEl.textContent = 'Error: ' + ( res.data?.message || 'Unknown' );
 				sidebarBody.appendChild( errEl );
+					DomHelper.setStatus( 'Failed to load relations', 'error', 2 );
 					return;
 				}
 				sidebarBody.appendChild( this._buildRelationsDOM( res.data.relations, postId ) );
+				DomHelper.setStatus( 'Relations loaded', 'success', 2 );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 relations', 'cancelled' );
+					DomHelper.setStatus( 'Cancelled \u2014 relations', 'cancelled', 2 );
 					return;
 				}
 				DomHelper.setTextContent( sidebarBody, '' );
-				DomHelper.clearStatus();
 				const failEl = document.createElement( 'div' );
 				failEl.className = 'wte-dbg-relation-empty';
 				failEl.textContent = 'Request failed.';
 				sidebarBody.appendChild( failEl );
+				DomHelper.setStatus( 'Request failed', 'error', 2 );
 			} );
 	}
 
@@ -924,17 +929,20 @@ export class MasterDetailTab {
 		fetch( ajaxurl + '?' + params, { signal } )
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
-				DomHelper.clearStatus();
-				if ( ! res.success || ! res.data.relations[ group ] ) return;
+				if ( ! res.success || ! res.data.relations[ group ] ) {
+					DomHelper.setStatus( 'Failed to load page', 'error', 2 );
+					return;
+				}
 				const newGroupEl = this._buildRelationGroup( group, res.data.relations[ group ], postId );
 				existingGroup ? existingGroup.replaceWith( newGroupEl ) : sidebarBody.appendChild( newGroupEl );
+				DomHelper.setStatus( 'Page ' + page + ' loaded', 'success', 2 );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 relations', 'cancelled' );
+					DomHelper.setStatus( 'Cancelled \u2014 relations', 'cancelled', 2 );
 					return;
 				}
-				DomHelper.clearStatus();
+				DomHelper.setStatus( 'Request failed', 'error', 2 );
 			} );
 	}
 

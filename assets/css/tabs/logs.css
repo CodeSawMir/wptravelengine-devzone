@@ -1,0 +1,223 @@
+/* ==========================================================================
+   Logs Tab — WordPress debug/log subtab
+   ========================================================================== */
+
+/* ── WordPress debug subtab ── */
+.wte-dbg-wp-wrap {
+	padding: 16px 20px;
+}
+
+.wte-dbg-wp-debug-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--dbg-border);
+	color: var(--dbg-text);
+	gap: 12px;
+}
+
+.wte-dbg-wp-debug-row:last-of-type {
+	border-bottom: none;
+}
+
+.wte-dbg-wp-code {
+	font-size: 12px;
+	color: var(--dbg-text);
+	background: transparent;
+	padding: 0;
+}
+
+.wte-dbg-wp-desc {
+	color: var(--dbg-text-dim);
+	font-size: 11px;
+	margin-left: 8px;
+}
+
+.wte-dbg-wp-debug-toggle {
+	position: relative;
+	display: inline-block;
+	width: 36px;
+	height: 20px;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.wte-dbg-wp-debug-toggle input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.wte-dbg-wp-debug-slider {
+	position: absolute;
+	inset: 0;
+	background: var(--dbg-border);
+	border-radius: 10px;
+	transition: background .2s;
+}
+
+.wte-dbg-wp-debug-slider::before {
+	content: '';
+	position: absolute;
+	width: 14px;
+	height: 14px;
+	left: 3px;
+	top: 3px;
+	background: var(--dbg-surface);
+	border-radius: 50%;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+	transition: transform .2s;
+}
+
+.wte-dbg-wp-debug-toggle input:checked+.wte-dbg-wp-debug-slider {
+	background: #f59e0b;
+}
+
+.wte-dbg-wp-debug-toggle input:checked+.wte-dbg-wp-debug-slider::before {
+	transform: translateX(16px);
+}
+
+.wte-dbg-wp-debug-row.is-loading {
+	opacity: .5;
+	pointer-events: none;
+}
+
+#wte-dbg-log-body {
+	padding: 0;
+}
+
+.wte-dbg-wp-empty {
+	padding: 16px;
+	margin: 0;
+	opacity: .6;
+	font-size: 12px;
+}
+
+.wte-dbg-wp-log-legend {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-wp-log-badge {
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 7px;
+	border-radius: 3px;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+}
+
+.wte-dbg-wp-log-badge.is-fatal {
+	background: rgba(239, 68, 68, .15);
+	color: #ef4444;
+}
+
+.wte-dbg-wp-log-badge.is-warning {
+	background: rgba(245, 158, 11, .15);
+	color: #d97706;
+}
+
+.wte-dbg-wp-log-badge.is-deprecated {
+	background: rgba(99, 102, 241, .15);
+	color: #6366f1;
+}
+
+.wte-dbg-wp-log-badge.is-notice {
+	background: rgba(14, 165, 233, .15);
+	color: #0ea5e9;
+}
+
+.wte-dbg-wp-log-list {
+	max-height: 480px;
+	overflow-y: auto;
+	padding: 8px 0;
+}
+
+.wte-dbg-wp-log-line {
+	padding: 3px 16px;
+	font-size: 11px;
+	line-height: 1.65;
+	font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+	white-space: pre-wrap;
+	word-break: break-all;
+	border-left: 3px solid transparent;
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-wp-log-line.is-fatal {
+	border-color: #ef4444;
+	color: #ef4444;
+	background: rgba(239, 68, 68, .04);
+}
+
+.wte-dbg-wp-log-line.is-warning {
+	border-color: #f59e0b;
+	color: #d97706;
+	background: rgba(245, 158, 11, .04);
+}
+
+.wte-dbg-wp-log-line.is-deprecated {
+	border-color: #6366f1;
+	color: #6366f1;
+	background: rgba(99, 102, 241, .04);
+}
+
+.wte-dbg-wp-log-line.is-notice {
+	border-color: #0ea5e9;
+	color: #0ea5e9;
+	background: rgba(14, 165, 233, .04);
+}
+
+.wte-dbg-wp-log-line+.wte-dbg-wp-log-line {
+	border-top: 1px solid var(--dbg-border);
+}
+
+/* ── WordPress subtab skeleton ── */
+.wte-dbg-wp-skel-title {
+	width: 110px;
+	height: 13px;
+}
+
+.wte-dbg-wp-skel-note {
+	width: 190px;
+	height: 11px;
+}
+
+.wte-dbg-wp-skel-code {
+	width: 88px;
+	height: 13px;
+	margin-bottom: 5px;
+}
+
+.wte-dbg-wp-skel-desc {
+	width: 155px;
+	height: 11px;
+}
+
+.wte-dbg-wp-skel-toggle {
+	width: 36px;
+	height: 20px;
+	border-radius: 10px;
+	flex-shrink: 0;
+}
+
+.wte-dbg-wp-skel-log-path {
+	width: 230px;
+	height: 11px;
+}
+
+.wte-dbg-wp-skel-log-lines {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px 16px;
+}
+
+
+.wte-dbg-wp-skel-log-line {
+	height: 12px;
+}

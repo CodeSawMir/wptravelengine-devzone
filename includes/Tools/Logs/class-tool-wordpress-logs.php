@@ -20,6 +20,15 @@ class ToolWordpressLogs extends AbstractTool {
 		add_action( 'wp_ajax_wpte_devzone_logs_wp_clear_log',  [ $this, 'clear_log' ] );
 	}
 
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-logs',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/logs.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
+
 	/**
 	 * Applies saved debug flags on every load while the plugin is active.
 	 * Uses ini_set() for logging/display so constants already set false in

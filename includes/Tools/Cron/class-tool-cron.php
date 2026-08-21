@@ -19,6 +19,15 @@ class ToolCron extends AbstractTool {
 		add_action( 'wp_ajax_wpte_devzone_cron_schedule', [ $this, 'schedule_cron' ] );
 	}
 
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-cron',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/cron.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
+
 	// -------------------------------------------------------------------------
 	// Schedule registry
 	// -------------------------------------------------------------------------

@@ -30,6 +30,15 @@ class ToolOverview extends AbstractTool {
 		}
 	}
 
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-overview',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/overview.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
+
 	// -------------------------------------------------------------------------
 	// Endpoints
 	// -------------------------------------------------------------------------

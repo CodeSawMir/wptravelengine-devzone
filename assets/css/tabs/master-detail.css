@@ -1,0 +1,909 @@
+/* ==========================================================================
+   Master-Detail Tab — shared by Trips / Bookings / Payments / Customers
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------
+   Master-detail layout (Trips / Bookings / Customers)
+   ------------------------------------------------------------------------- */
+.wte-dbg-master-detail {
+	display: flex;
+	height: calc(100vh - 100px);
+	min-height: 500px;
+}
+
+.wte-dbg-list-panel {
+	width: 280px;
+	min-width: 220px;
+	max-width: 340px;
+	border-right: 1px solid var(--dbg-border);
+	display: flex;
+	flex-direction: column;
+	background: var(--dbg-surface);
+	overflow: hidden;
+	transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.wte-dbg-list-header {
+	padding: 12px 16px 8px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--dbg-text-muted);
+	border-bottom: 1px solid var(--dbg-border-faint);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+/* Sidebar collapse toggle */
+.wte-dbg-sidebar-toggle {
+	margin-left: auto;
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid var(--dbg-border);
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	color: var(--dbg-text-dim);
+	padding: 0;
+}
+
+.wte-dbg-sidebar-toggle:hover {
+	background: var(--dbg-hover-bg);
+	color: var(--dbg-text);
+}
+
+/* Collapsed sidebar */
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-list-panel {
+	width: 32px;
+	min-width: 32px;
+}
+
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-list-header {
+	padding: 8px 6px;
+	justify-content: center;
+}
+
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-list-header> :not(.wte-dbg-sidebar-toggle) {
+	display: none;
+}
+
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-search-wrap,
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-list-items,
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-pagination {
+	display: none;
+}
+
+.wte-dbg-list-count {
+	font-size: 11px;
+	font-weight: 400;
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-search-wrap {
+	padding: 8px 12px;
+}
+
+/* Context-specific width — shared pill styling comes from .wte-dbg-search-input */
+.wte-dbg-search {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.wte-dbg-list-items {
+	flex: 1;
+	overflow-y: auto;
+	padding: 12px 0 4px;
+	position: relative;
+	z-index: 1;
+}
+
+
+.wte-dbg-list-item {
+	position: relative;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	padding: 8px 28px 8px 16px;
+	cursor: pointer;
+	border-left: 3px solid transparent;
+	border-bottom: 1px solid var(--dbg-surface-alt);
+	transition: background 0.1s;
+}
+
+.wte-dbg-list-item-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.wte-dbg-list-item:hover {
+	background: var(--dbg-hover-bg);
+	z-index: 1;
+}
+
+.wte-dbg-list-item.is-active {
+	background: var(--dbg-active-bg);
+	border-left-color: var(--dbg-accent);
+}
+
+.wte-dbg-list-item.is-pinned {
+	border-left-color: var(--dbg-accent);
+	z-index: 1;
+}
+
+/* Pin button — rotated 45° badge anchored to the item's right side.
+   Hidden until the row is hovered; always visible when pinned. */
+.wte-dbg-pin-btn {
+	position: absolute;
+	top: 24px;
+	right: 8px;
+	transform: translateY(-50%) rotate(45deg);
+	background: var(--dbg-surface);
+	border: 1px solid var(--dbg-border);
+	border-radius: 5px;
+	cursor: pointer;
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	color: var(--dbg-text-dim);
+	opacity: 0;
+	transition: opacity 0.15s, color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.wte-dbg-list-item:hover .wte-dbg-pin-btn,
+.wte-dbg-list-item.is-pinned .wte-dbg-pin-btn {
+	opacity: 1;
+}
+
+.wte-dbg-list-item.is-pinned .wte-dbg-pin-btn {
+	color: var(--dbg-accent);
+	background: color-mix(in srgb, var(--dbg-accent) 12%, var(--dbg-surface));
+	border-color: color-mix(in srgb, var(--dbg-accent) 40%, transparent);
+	box-shadow: 0 1px 4px color-mix(in srgb, var(--dbg-accent) 25%, transparent);
+}
+
+.wte-dbg-list-item:hover .wte-dbg-pin-btn:hover,
+.wte-dbg-list-item.is-pinned .wte-dbg-pin-btn:hover {
+	background: color-mix(in srgb, var(--dbg-accent) 20%, var(--dbg-surface));
+	border-color: color-mix(in srgb, var(--dbg-accent) 55%, transparent);
+	color: var(--dbg-accent);
+	box-shadow: 0 2px 6px color-mix(in srgb, var(--dbg-accent) 30%, transparent);
+	transform: translateY(-50%) rotate(45deg) scale(1.15);
+}
+
+/* Separator between pinned and regular items */
+.wte-dbg-list-pin-separator {
+	height: 1px;
+	background: var(--dbg-accent);
+	opacity: 0.25;
+	margin: 2px 12px;
+}
+
+.wte-dbg-list-item-title {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--dbg-text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wte-dbg-list-item-meta {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	margin-top: 2px;
+}
+
+/* Status badges */
+.wte-dbg-status {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.wte-dbg-status-publish,
+.wte-dbg-status-completed,
+.wte-dbg-status-booked {
+	background: #d7f1e2;
+	color: #1a7a40;
+}
+
+.wte-dbg-status-pending {
+	background: #fef8e1;
+	color: #a67c00;
+}
+
+.wte-dbg-status-draft {
+	background: var(--dbg-bg);
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-status-trash,
+.wte-dbg-status-cancelled {
+	background: #fce8e8;
+	color: #8a1f1f;
+}
+
+.wte-dbg-pagination {
+	padding: 8px 12px;
+	border-top: 1px solid var(--dbg-border-faint);
+	display: flex;
+	gap: 6px;
+	justify-content: center;
+}
+
+.wte-dbg-page-btn {
+	padding: 3px 8px;
+	font-size: 12px;
+	border: 1px solid var(--dbg-border);
+	border-radius: 3px;
+	background: var(--dbg-surface);
+	cursor: pointer;
+	color: var(--dbg-accent);
+}
+
+.wte-dbg-page-btn:hover:not(:disabled) {
+	background: var(--dbg-active-bg);
+}
+
+.wte-dbg-page-btn:disabled {
+	color: #a7aaad;
+	cursor: default;
+}
+
+/* -------------------------------------------------------------------------
+   Inspector panel
+   ------------------------------------------------------------------------- */
+.wte-dbg-inspector-panel {
+	flex: 1;
+	overflow-y: auto;
+	background: var(--dbg-surface);
+	padding: 0;
+	position: relative;
+}
+
+.wte-dbg-inspector-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: var(--dbg-text-dim);
+	font-size: 14px;
+}
+
+.wte-dbg-inspector-header {
+	padding: 16px 20px 12px;
+	border-bottom: 1px solid var(--dbg-border-faint);
+}
+
+.wte-dbg-inspector-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--dbg-text);
+	margin: 0 0 4px;
+}
+
+.wte-dbg-inspector-subtitle {
+	font-size: 12px;
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-inspector-body {
+	padding: 0;
+}
+
+.wte-dbg-meta-section .wte-dbg-row {
+	padding-left: 20px;
+}
+
+.wte-dbg-taxonomy-list {
+	padding: 6px 20px 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.wte-dbg-tax-term {
+	background: #e0e0e0;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 11px;
+	color: var(--dbg-text);
+}
+
+.wte-dbg-tax-empty {
+	font-size: 12px;
+	color: var(--dbg-text-dim);
+	padding: 6px 20px;
+	font-style: italic;
+}
+
+/* Post field editable rows */
+.wte-dbg-post-field select.wte-dbg-input {
+	font-family: -apple-system, sans-serif;
+	font-size: 13px;
+}
+
+/* Meta key styling in dynamic inspector */
+.wte-dbg-meta-key-label {
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+	color: var(--dbg-accent-dark);
+}
+
+/* Nested meta tree inside inspector panel */
+.wte-dbg-meta-tree {
+	padding: 0 0 0 8px;
+}
+
+.wte-dbg-meta-tree>.wte-dbg-row {
+	display: flex;
+	align-items: center;
+	padding: 4px 14px 4px 20px;
+	margin: 0;
+}
+
+.wte-dbg-meta-tree>.wte-dbg-node {
+	display: block;
+	padding: 0;
+	margin: 0;
+}
+
+/* -------------------------------------------------------------------------
+   Relations section
+   ------------------------------------------------------------------------- */
+.wte-dbg-relation-group {
+	padding: 8px 20px 10px;
+	border-bottom: 1px solid var(--dbg-border-faint);
+}
+
+.wte-dbg-relation-group:last-child {
+	border-bottom: none;
+}
+
+.wte-dbg-relation-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.wte-dbg-relation-label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-relation-count {
+	font-size: 10px;
+	font-weight: 600;
+	background: var(--dbg-active-bg);
+	border: 1px solid var(--dbg-border);
+	color: var(--dbg-accent);
+	border-radius: 10px;
+	padding: 2px 7px;
+}
+
+/* Context-specific layout — shared pill styling from .wte-dbg-search-input */
+.wte-dbg-relation-filter {
+	display: block;
+	width: 100%;
+	margin-bottom: 10px;
+	box-sizing: border-box;
+	height: 28px;
+	font-size: 11px;
+}
+
+.wte-dbg-relation-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+/* Relation skeleton — reuses .wte-dbg-loader-block shimmer */
+.wte-dbg-skel-label {
+	width: 55px;
+	height: 9px;
+}
+
+.wte-dbg-skel-badge {
+	width: 22px;
+	height: 16px;
+	border-radius: 10px;
+}
+
+.wte-dbg-relation-skeleton-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 10px;
+	border: 1px solid var(--dbg-border);
+	border-radius: 4px;
+	background: var(--dbg-surface-alt);
+}
+
+.wte-dbg-relation-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 6px 10px;
+	border: 1px solid var(--dbg-border);
+	border-radius: 4px;
+	background: var(--dbg-surface-alt);
+	cursor: pointer;
+	transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+	gap: 8px;
+	text-decoration: none;
+}
+
+.wte-dbg-relation-item:hover,
+.wte-dbg-relation-item:focus {
+	background: var(--dbg-active-bg);
+	border-color: var(--dbg-accent);
+	box-shadow: 0 1px 4px color-mix(in srgb, var(--dbg-accent) 15%, transparent);
+	outline: none;
+}
+
+.wte-dbg-relation-item-title {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--dbg-text);
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wte-dbg-relation-item:hover .wte-dbg-relation-item-title,
+.wte-dbg-relation-item:focus .wte-dbg-relation-item-title {
+	color: var(--dbg-accent);
+}
+
+.wte-dbg-relation-item-meta {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.wte-dbg-relation-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: 24px 16px;
+	font-size: 12px;
+	font-style: italic;
+	color: var(--dbg-text-dim);
+	text-align: center;
+}
+
+.wte-dbg-relation-list .wte-dbg-relation-empty {
+	justify-content: flex-start;
+	flex: none;
+	padding: 4px 2px;
+	text-align: left;
+}
+
+.wte-dbg-relation-pagination {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+}
+
+.wte-dbg-rel-page-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	background: var(--dbg-surface-alt);
+	border: 1px solid var(--dbg-border);
+	border-radius: 4px;
+	color: var(--dbg-text);
+	font-size: 14px;
+	cursor: pointer;
+	line-height: 1;
+	transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.wte-dbg-rel-page-btn:hover:not(:disabled) {
+	background: var(--dbg-hover-bg);
+	border-color: var(--dbg-accent);
+	color: var(--dbg-accent);
+}
+
+.wte-dbg-rel-page-btn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.wte-dbg-rel-page-info {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	min-width: 48px;
+	text-align: center;
+}
+
+/* -------------------------------------------------------------------------
+   Relations sidebar (right panel in master-detail tabs)
+   ------------------------------------------------------------------------- */
+.wte-dbg-relations-resize-handle {
+	width: 5px;
+	flex-shrink: 0;
+	cursor: ew-resize;
+	background: transparent;
+	transition: background 0.15s;
+	position: relative;
+	z-index: 1;
+}
+
+.wte-dbg-relations-resize-handle:hover {
+	background: rgba(34, 113, 177, 0.25);
+}
+
+.wte-dbg-master-detail.relations-collapsed .wte-dbg-relations-resize-handle {
+	display: none;
+}
+
+.wte-dbg-relations-sidebar {
+	width: 280px;
+	flex-shrink: 0;
+	border-left: 1px solid var(--dbg-border);
+	display: flex;
+	flex-direction: column;
+	background: var(--dbg-surface);
+	overflow: hidden;
+	transition: width 0.25s ease;
+}
+
+/* Expand: content slides in from the right after sidebar opens */
+
+.wte-dbg-relations-sidebar-header>span {
+	transform: translateX(0);
+	transition: opacity 0.15s ease 0.2s, transform 0.15s ease 0.2s;
+}
+
+/* Collapsed: content slides right and fades, then sidebar slides shut */
+.wte-dbg-master-detail.relations-collapsed .wte-dbg-relations-sidebar {
+	width: 32px;
+	min-width: 32px;
+}
+
+.wte-dbg-master-detail.relations-collapsed .wte-dbg-relations-sidebar-header> :not(.wte-dbg-relations-toggle) {
+	opacity: 0;
+	transform: translateX(24px);
+	pointer-events: none;
+	transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.wte-dbg-master-detail.relations-collapsed .wte-dbg-relations-sidebar-body {
+	opacity: 0;
+	transform: translateX(32px);
+	pointer-events: none;
+	transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.wte-dbg-relations-sidebar-header {
+	padding: 12px 8px;
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--dbg-accent-dark);
+	border-bottom: 1px solid var(--dbg-border-faint);
+	background: var(--dbg-surface-alt);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.wte-dbg-relations-toggle {
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: 1px solid var(--dbg-border);
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	color: var(--dbg-text-dim);
+	padding: 0;
+	/* sits at left edge — no margin-left: auto */
+	margin-left: 0;
+}
+
+.wte-dbg-relations-toggle:hover {
+	background: var(--dbg-hover-bg);
+	color: var(--dbg-text);
+}
+
+.wte-dbg-relations-sidebar-body {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	transform: translateX(0);
+	transition: opacity 0.2s ease 0.2s, transform 0.2s ease 0.2s;
+}
+
+/* Relation groups inside the sidebar body — remove bottom border on last group */
+.wte-dbg-relations-sidebar-body .wte-dbg-relation-group:last-child {
+	border-bottom: none;
+}
+
+/* ==========================================================================
+   Export / Import Toolbar — Trips (and any future post-type tools)
+   ========================================================================== */
+
+/* Toolbar row — sits between search box and the list items */
+.wte-dbg-ei-toolbar {
+	display: flex;
+	gap: 6px;
+	padding: 0 10px 8px;
+	flex-shrink: 0;
+}
+
+/* Hide the toolbar when the sidebar is collapsed — !important beats is-export-mode specificity */
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-ei-toolbar,
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-ei-select-all-row {
+	display: none !important;
+}
+
+/* Also hide individual checkboxes when collapsed */
+.wte-dbg-master-detail.sidebar-collapsed .wte-dbg-ei-cb {
+	display: none !important;
+}
+
+/* Shared button base */
+.wte-dbg-ei-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	height: 28px;
+	padding: 0 10px;
+	border-radius: 4px;
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	cursor: pointer;
+	border: 1.5px solid transparent;
+	transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+	flex-shrink: 0;
+	line-height: 1;
+	font-family: inherit;
+}
+
+.wte-dbg-ei-btn svg {
+	flex-shrink: 0;
+	pointer-events: none;
+}
+
+/* "SELECT TO EXPORT" / "EXPORT (N)" — primary outline style */
+.wte-dbg-ei-select-btn {
+	background: transparent;
+	border-color: var(--dbg-accent);
+	color: var(--dbg-accent);
+	flex: 1 1 0;
+	justify-content: center;
+}
+
+.wte-dbg-ei-select-btn:hover {
+	background: var(--dbg-active-bg);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--dbg-accent) 20%, transparent);
+}
+
+/* In export mode: show export label, hide select label */
+.wte-dbg-ei-select-label {
+	display: inline;
+}
+
+.wte-dbg-ei-export-label {
+	display: none;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-label {
+	display: none;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-export-label {
+	display: inline;
+}
+
+/* Cancel button — only visible in export mode */
+.wte-dbg-ei-cancel-btn {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border-radius: 50%;
+	border: 1.5px solid var(--dbg-border);
+	background: transparent;
+	color: var(--dbg-text-muted);
+	font-size: 14px;
+	line-height: 1;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.wte-dbg-ei-cancel-btn:hover {
+	background: #fef2f2;
+	border-color: #f87171;
+	color: #dc2626;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-cancel-btn:hover {
+	background: #2d1515;
+	border-color: #f87171;
+	color: #f87171;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-cancel-btn {
+	display: flex;
+}
+
+/* In export mode: button turns solid accent */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn {
+	background: var(--dbg-accent);
+	border-color: var(--dbg-accent);
+	color: #fff;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn:hover {
+	background: var(--dbg-accent-dark);
+	border-color: var(--dbg-accent-dark);
+}
+
+/* Dark mode overrides for solid button text */
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn {
+	background: var(--dbg-accent);
+	color: #0d1b2a;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-btn:hover {
+	background: var(--dbg-accent-dark);
+	color: #0d1b2a;
+}
+
+/* "IMPORT" button — neutral ghost style */
+.wte-dbg-ei-import-btn {
+	background: transparent;
+	border-color: var(--dbg-border);
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-ei-import-btn:hover {
+	background: var(--dbg-hover-bg);
+	border-color: var(--dbg-text-muted);
+	color: var(--dbg-text);
+}
+
+/* Hidden native file input */
+.wte-dbg-ei-file-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* SELECT ALL row — shown only in export mode */
+.wte-dbg-ei-select-all-row {
+	display: none;
+	align-items: center;
+	padding: 4px 12px 6px 12px;
+	border-bottom: 1px solid var(--dbg-border-faint);
+	flex-shrink: 0;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-ei-select-all-row {
+	display: flex;
+}
+
+.wte-dbg-ei-select-all-label {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--dbg-text-muted);
+	user-select: none;
+}
+
+.wte-dbg-ei-select-all-label:hover {
+	color: var(--dbg-text);
+}
+
+/* Export checkboxes on list items — hidden by default */
+.wte-dbg-list-item .wte-dbg-ei-cb {
+	display: none;
+	/* Let the browser render the native checkbox at its natural size so the
+	   tick mark sits correctly — no forced width/height. */
+	margin: 0 8px 0 0;
+	cursor: pointer;
+	flex-shrink: 0;
+	accent-color: var(--dbg-accent);
+	vertical-align: middle;
+}
+
+/* In export mode: reduce item left padding so the checkbox + content
+   align flush with the SELECT ALL row above. */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item {
+	padding-left: 12px;
+}
+
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item .wte-dbg-ei-cb {
+	display: block;
+}
+
+/* In export mode: pin button hides to give room for checkbox */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item .wte-dbg-pin-btn {
+	display: none;
+}
+
+/* In export mode: clicking a row highlights it as selected */
+.wte-dbg-master-detail.is-export-mode .wte-dbg-list-item:has(.wte-dbg-ei-cb:checked) {
+	background: var(--dbg-active-bg);
+}
+
+/* Dark mode: checkbox accent & label */
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-select-btn {
+	border-color: var(--dbg-accent);
+	color: var(--dbg-accent);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-import-btn {
+	border-color: var(--dbg-border);
+	color: var(--dbg-text-muted);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-ei-import-btn:hover {
+	background: var(--dbg-hover-bg);
+	border-color: var(--dbg-text-muted);
+	color: var(--dbg-text);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-list-item .wte-dbg-ei-cb {
+	accent-color: var(--dbg-accent);
+}
+
+/* Ensure dark-mode form-element override doesn't stomp the checkbox */
+.wte-devzone-wrap.wte-dbg-dark input[type="checkbox"].wte-dbg-ei-cb,
+.wte-devzone-wrap.wte-dbg-dark input[type="checkbox"].wte-dbg-ei-select-all-cb {
+	background-color: unset;
+}

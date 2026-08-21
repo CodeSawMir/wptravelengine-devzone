@@ -23,6 +23,15 @@ class ToolPerf extends AbstractTool {
 		add_action( 'wp_ajax_wpte_devzone_perf_plugins',         [ $this, 'get_plugin_health' ] );
 	}
 
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-perf',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/perf.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
+
 	// -------------------------------------------------------------------------
 	// Endpoints
 	// -------------------------------------------------------------------------

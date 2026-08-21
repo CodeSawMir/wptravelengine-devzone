@@ -1692,6 +1692,15 @@ td.wte-dbg-empty-row {
    Insert form (Add mode — result-table style with editable row)
    ========================================================================= */
 
+/* Lock column widths to their initial layout so collapsing a tree node (which
+   shrinks that cell's content) never reflows the other columns. Applied only
+   once a tree is actually showing (see _loadTreeForCell) — before that, auto
+   layout should size columns from the real (textarea) content as normal. */
+.wte-dbg-insert-table.wte-dbg-lock-col-widths,
+.wte-dbg-update-table.wte-dbg-lock-col-widths {
+	table-layout: fixed;
+}
+
 /* Table cells in insert/update rows — override result-table td defaults */
 .wte-dbg-insert-table td,
 .wte-dbg-update-table td {
@@ -1706,7 +1715,7 @@ td.wte-dbg-empty-row {
 }
 
 .wte-dbg-update-table th {
-	vertical-align: top;
+	vertical-align: middle;
 }
 
 /* Editable row background — subtle tint so it reads as "editable" */
@@ -1813,5 +1822,121 @@ td.wte-dbg-empty-row {
 	opacity: 0.3;
 	pointer-events: none;
 	cursor: default;
+}
+
+/* =========================================================================
+   Tree editing for serialized update-cell values
+   ========================================================================= */
+
+/* Tree replaces the textarea in-place — same cell, boxed so it reads as an editor */
+.wte-dbg-update-tree.wte-dbg-unser-tree {
+	margin-top: 3px;
+	max-height: 260px;
+	overflow: auto;
+	border: 1px solid rgba(34, 113, 177, 0.25);
+	border-radius: 3px;
+	background: var(--dbg-surface);
+	padding: 2px 0;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-update-tree.wte-dbg-unser-tree {
+	border-color: rgba(126, 184, 247, 0.2);
+}
+
+/* Leaf inputs inside the tree — compact, inline with the key/type badge */
+/* Pill shape — same treatment as .wte-dbg-filter-row .wte-dbg-input */
+.wte-dbg-update-tree .wte-dbg-tree-input {
+	flex: 1;
+	min-width: 40px;
+	max-width: 100%;
+	min-height: 24px;
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--dbg-text);
+	background: var(--dbg-surface);
+	border: 1.5px solid var(--dbg-border);
+	border-radius: 20px;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+	padding: 2px 10px;
+	outline: none;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	resize: none;
+	/* No width transition — an animated resize mid-flight would still be
+	   interpolating when the focus handler measures scrollHeight for the
+	   height auto-grow, undershooting it. Instant resize keeps both correct. */
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Grows past the truncated width/height on click/focus so the full value is
+   visible, wrapped like a textarea instead of staying a single clipped line.
+   Native double-click-to-select-word and drag-to-select need nothing extra,
+   they already work on <textarea>/<input>; truncation was the only thing
+   hiding them. */
+.wte-dbg-update-tree .wte-dbg-tree-input:focus {
+	position: relative;
+	z-index: 2;
+	flex: 0 0 auto;
+	width: max( 100%, min( 420px, 60vw ) );
+	max-width: min( 420px, 60vw );
+	max-height: 200px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	white-space: pre-wrap;
+	word-break: break-word;
+	border-radius: 12px;
+	border-color: var(--dbg-accent);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1), 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.wte-dbg-update-tree .wte-dbg-row {
+	gap: 8px;
+}
+
+/* Changed leaf — highlighted so it's obvious which paths will actually be sent */
+.wte-dbg-update-tree .wte-dbg-tree-leaf.is-dirty {
+	background: rgba(217, 119, 6, 0.08);
+}
+
+.wte-dbg-update-tree .wte-dbg-tree-leaf.is-dirty .wte-dbg-tree-input {
+	border-color: #d97706;
+	background: rgba(217, 119, 6, 0.06);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-update-tree .wte-dbg-tree-leaf.is-dirty {
+	background: rgba(251, 191, 36, 0.1);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-update-tree .wte-dbg-tree-leaf.is-dirty .wte-dbg-tree-input {
+	border-color: #fbbf24;
+	background: rgba(251, 191, 36, 0.08);
+}
+
+/* Loader shown in a cell while its serialized value is being unserialized into a tree */
+.wte-dbg-tree-loader {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 4px;
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-tree-loader-spinner {
+	width: 12px;
+	height: 12px;
+	flex-shrink: 0;
+	border: 2px solid var(--dbg-border);
+	border-top-color: var(--dbg-accent);
+	border-radius: 50%;
+	animation: wte-dbg-spin 0.8s linear infinite;
+}
+
+/* Expand-all icon in the update table's column header, before the column label */
+.wte-dbg-th-expand-all {
+	margin-right: 5px;
+	vertical-align: middle;
 }
 

@@ -1,0 +1,364 @@
+/* ==========================================================================
+   Overview Tab — settings tree, taxonomy browser, price categories
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------
+   Tree (Settings tab)
+   ------------------------------------------------------------------------- */
+.wte-dbg-settings-tab {
+	padding: 16px 20px;
+}
+
+.wte-dbg-help {
+	font-size: 13px;
+	color: #50575e;
+	margin-bottom: 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.wte-dbg-count-badge {
+	background: var(--dbg-active-bg);
+	border: 1px solid var(--dbg-border);
+	padding: 1px 7px;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--dbg-accent);
+	letter-spacing: 0.02em;
+}
+
+.wte-dbg-settings-tree {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.wte-dbg-option-block {
+	border: 1px solid var(--dbg-border);
+	border-radius: 4px;
+	background: var(--dbg-surface);
+	overflow: hidden;
+	display: flex;
+	align-items: stretch;
+}
+
+.wte-dbg-option-block>details {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Expand-all button inline inside .wte-dbg-option-name summary */
+details:not([open]) .wte-dbg-expand-all-inline {
+	display: none;
+}
+
+.wte-dbg-expand-all-inline {
+	margin-left: auto;
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1;
+	color: var(--dbg-text-muted);
+	padding: 2px 4px;
+	border-radius: 3px;
+	transition: color 0.1s, background 0.1s;
+}
+
+.wte-dbg-expand-all-inline:hover {
+	color: var(--dbg-accent);
+	background: var(--dbg-active-bg);
+}
+
+.wte-dbg-delete-option-btn {
+	background: none;
+	border: none;
+	border-left: 1px solid var(--dbg-border);
+	cursor: pointer;
+	color: var(--dbg-border);
+	padding: 0 12px;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.1s, color 0.1s;
+}
+
+.wte-dbg-delete-option-btn:hover {
+	background: #fce8e8;
+	color: #c0392b;
+}
+
+.wte-dbg-delete-option-btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+
+.wte-dbg-option-name {
+	padding: 8px 14px;
+	font-size: 11px;
+	font-weight: 700;
+	font-family: "SFMono-Regular", Consolas, monospace;
+	letter-spacing: 0.04em;
+	color: var(--dbg-text-muted);
+	cursor: pointer;
+	user-select: none;
+	background: var(--dbg-surface-alt);
+	list-style: none;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	transition: background 0.1s;
+}
+
+.wte-dbg-option-name:hover {
+	background: var(--dbg-hover-bg);
+}
+
+.wte-dbg-option-name::-webkit-details-marker {
+	display: none;
+}
+
+details[open]>.wte-dbg-option-name::before {
+	content: '▼';
+	font-size: 9px;
+	color: var(--dbg-text-muted);
+}
+
+details:not([open])>.wte-dbg-option-name::before {
+	content: '▶';
+	font-size: 9px;
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-option-body {
+	margin: 8px 12px;
+	border: 1px solid var(--dbg-border-faint);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-option-body {
+	border-color: var(--dbg-border);
+}
+
+details[open]>.wte-dbg-option-name {
+	border-left: 3px solid var(--dbg-accent);
+	border-bottom: 1px solid var(--dbg-border);
+	padding-left: 11px;
+}
+
+/* Settings search */
+/* Context-specific layout — shared pill styling comes from .wte-dbg-search-input */
+.wte-dbg-option-search {
+	display: block;
+	width: 100%;
+	margin-bottom: 12px;
+	box-sizing: border-box;
+}
+
+/* Skeleton loader — @keyframes wte-dbg-shimmer lives in core devzone.css
+   (shared by .wte-dbg-loader-block, which every tab's skeletons use). */
+.wte-dbg-skeleton {
+	min-height: 60px;
+	background: linear-gradient(90deg,
+			var(--dbg-bg) 25%,
+			#e8e8ea 50%,
+			var(--dbg-bg) 75%);
+	background-size: 800px 100%;
+	animation: wte-dbg-shimmer 1.4s infinite linear;
+	border-radius: 3px;
+	margin: 8px 14px;
+}
+
+/* -------------------------------------------------------------------------
+   Overview tab — named sections
+   ------------------------------------------------------------------------- */
+.wte-dbg-settings-tab .wte-dbg-section {
+	border: 1px solid var(--dbg-border);
+	border-radius: 4px;
+	background: var(--dbg-surface);
+	margin-bottom: 10px;
+	overflow: hidden;
+}
+
+.wte-dbg-settings-tab .wte-dbg-section-header {
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border);
+	border-left: 3px solid var(--dbg-accent);
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: var(--dbg-text-muted);
+	padding: 8px 14px;
+	cursor: pointer;
+	user-select: none;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.wte-dbg-settings-tab .wte-dbg-section.is-collapsed .wte-dbg-section-body {
+	display: none;
+}
+
+.wte-dbg-settings-tab .wte-dbg-section-body {
+	padding: 0;
+}
+
+/* Restore padding for text/input content that lives outside tables */
+.wte-dbg-settings-tab .wte-dbg-section-body>.wte-dbg-help {
+	padding: 10px 16px 4px;
+	margin: 0;
+}
+
+/* Context-specific layout only — shared pill styling comes from .wte-dbg-search-input */
+.wte-dbg-settings-tab .wte-dbg-option-search {
+	width: calc(100% - 32px);
+	margin: 12px 16px 10px;
+}
+
+/* Options tree — same indentation treatment as taxonomy tree */
+.wte-dbg-options-tree .wte-dbg-option-block {
+	margin-top: 4px;
+	margin-left: 16px;
+}
+
+.wte-dbg-options-tree .wte-dbg-option-block:first-child {
+	margin-top: 0;
+}
+
+.wte-dbg-settings-tab .wte-dbg-options-pagination {
+	padding: 6px 16px 10px;
+	margin-top: 0;
+}
+
+.wte-dbg-settings-tab .wte-dbg-section-body .wte-dbg-settings-tree {
+	margin-top: 0;
+}
+
+/* Options pagination sits at bottom of Options section */
+.wte-dbg-options-pagination {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 12px;
+	justify-content: flex-end;
+}
+
+/* -------------------------------------------------------------------------
+   Taxonomy tree — flat rows, not individual cards
+   ------------------------------------------------------------------------- */
+.wte-dbg-tax-tree {
+	gap: 0;
+	margin-top: 8px;
+}
+
+.wte-dbg-tax-tree .wte-dbg-option-block {
+	border: none;
+	border-bottom: 1px solid var(--dbg-border-faint);
+	border-radius: 0;
+	padding-right: 4px;
+}
+
+.wte-dbg-tax-tree .wte-dbg-option-block:first-child {
+	margin-top: 0;
+}
+
+.wte-dbg-tax-tree .wte-dbg-option-block:last-child {
+	border-bottom: none;
+}
+
+.wte-dbg-tax-tree .wte-dbg-option-name {
+	background: var(--dbg-surface);
+}
+
+.wte-dbg-tax-tree .wte-dbg-option-name:hover {
+	background: var(--dbg-hover-bg);
+}
+
+/* -------------------------------------------------------------------------
+   Price Category table
+   ------------------------------------------------------------------------- */
+.wte-dbg-price-cat-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+}
+
+.wte-dbg-price-cat-table th,
+.wte-dbg-price-cat-table td {
+	padding: 7px 16px;
+	text-align: left;
+	border-bottom: 1px solid var(--dbg-border-faint);
+}
+
+.wte-dbg-price-cat-table th {
+	font-weight: 700;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface-alt);
+	border-bottom: 2px solid var(--dbg-border);
+}
+
+.wte-dbg-price-cat-table tr:last-child td {
+	border-bottom: none;
+}
+
+.wte-dbg-price-cat-table tbody tr:nth-child(even) td {
+	background: rgba(0, 0, 0, 0.018);
+}
+
+.wte-dbg-price-cat-table tr:hover td {
+	background: var(--dbg-active-bg);
+}
+
+.wte-dbg-price-cat-primary {
+	color: #d63638;
+	font-size: 13px;
+	line-height: 1;
+	margin-right: 4px;
+}
+
+/* -------------------------------------------------------------------------
+   Taxonomy terms table (inside details blocks)
+   ------------------------------------------------------------------------- */
+.wte-dbg-tax-terms-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+	margin-top: 0;
+}
+
+.wte-dbg-tax-terms-table th,
+.wte-dbg-tax-terms-table td {
+	padding: 7px 16px;
+	text-align: left;
+	border-bottom: 1px solid var(--dbg-border-faint);
+}
+
+.wte-dbg-tax-terms-table th {
+	font-weight: 700;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface-alt);
+	border-bottom: 2px solid var(--dbg-border);
+}
+
+.wte-dbg-tax-terms-table tbody tr:nth-child(even) td {
+	background: rgba(0, 0, 0, 0.018);
+}
+
+.wte-dbg-tax-terms-table tr:last-child td {
+	border-bottom: none;
+}
+
+.wte-dbg-tax-terms-table tr:hover td {
+	background: var(--dbg-active-bg);
+}

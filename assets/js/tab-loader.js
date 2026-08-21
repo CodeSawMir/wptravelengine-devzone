@@ -13,6 +13,7 @@ const TAB_LABELS = {
 	overview: 'settings', trips: 'trips', bookings: 'bookings',
 	payments: 'payments', customers: 'customers', logs: 'logs',
 	query: 'query', cron: 'cron', perf: 'performance', marketplace: 'marketplace',
+	tinker: 'tinker',
 };
 
 export class TabLoader {
@@ -179,12 +180,12 @@ export class TabLoader {
 			.then( res => {
 				clearInterval( this._noteTimer );
 				this._noteTimer = null;
-				DomHelper.clearStatus();
 				DomHelper.setTextContent( content, '' );
 				content.style.visibility = '';
 				if ( ! res.success ) {
 					// Slug no longer valid (e.g. a tab that has since been removed).
 					// Clear the stale entry and fall back to overview so the user isn't stuck.
+					DomHelper.setStatus( 'Tab unavailable \u2014 falling back to overview', 'error', 2 );
 					try { localStorage.removeItem( TAB_KEY ); } catch ( e ) {}
 					this.loadTab( 'overview' );
 					return;
@@ -198,18 +199,19 @@ export class TabLoader {
 				if ( typeof window.wpteDbgInitSearch === 'function' ) {
 					window.wpteDbgInitSearch();
 				}
+				DomHelper.setStatus( label.charAt( 0 ).toUpperCase() + label.slice( 1 ) + ' loaded', 'success', 2 );
 			} )
 			.catch( err => {
 				clearInterval( this._noteTimer );
 				this._noteTimer = null;
-				DomHelper.clearStatus();
 				if ( err.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 ' + label + ' loading', 'cancelled' );
+					DomHelper.setStatus( 'Cancelled \u2014 ' + label + ' loading', 'cancelled', 2 );
 					return;
 				}
 				DomHelper.setTextContent( content, '' );
 				content.style.visibility = '';
 				content.appendChild( DomHelper.makePara( 'wte-dbg-empty', 'Request failed.' ) );
+				DomHelper.setStatus( 'Failed to load ' + label, 'error', 2 );
 			} );
 	}
 }

@@ -51,4 +51,14 @@ abstract class AbstractPostTool extends AbstractTool {
 	final public function get_template(): string {
 		return WPTE_DEVZONE_DIR . 'templates/tab-post-master-detail.php';
 	}
+
+	/** All post tools share a single stylesheet. */
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-master-detail',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/master-detail.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
 }

@@ -401,6 +401,7 @@ export class MarketplaceTab {
 		btn.disabled    = true;
 		btn.textContent = reinstall ? 'Reinstalling\u2026' : 'Installing\u2026';
 		card.classList.add( 'is-loading' );
+		DomHelper.setStatus( ( reinstall ? 'Reinstalling ' : 'Installing ' ) + label + '\u2026', 'info' );
 
 		this._post( 'wpte_devzone_marketplace_install', {
 			github_repo: plugin.github_repo,
@@ -432,6 +433,7 @@ export class MarketplaceTab {
 		btn.disabled    = true;
 		btn.textContent = 'Deleting\u2026';
 		card.classList.add( 'is-loading' );
+		DomHelper.setStatus( 'Deleting ' + ( plugin.name || plugin.slug ) + '\u2026', 'info' );
 
 		this._post( 'wpte_devzone_marketplace_delete', { plugin_file: plugin.plugin_file } )
 			.then( ( res ) => {
@@ -470,6 +472,7 @@ export class MarketplaceTab {
 	_activate( plugin, btn, card, statusEl ) {
 		btn.disabled    = true;
 		btn.textContent = 'Activating\u2026';
+		DomHelper.setStatus( 'Activating ' + ( plugin.name || plugin.slug ) + '\u2026', 'info' );
 
 		this._post( 'wpte_devzone_marketplace_activate', { plugin_file: plugin.plugin_file } )
 			.then( ( res ) => {
@@ -494,6 +497,7 @@ export class MarketplaceTab {
 
 		btn.disabled    = true;
 		btn.textContent = 'Deactivating…';
+		DomHelper.setStatus( 'Deactivating ' + ( plugin.name || plugin.slug ) + '\u2026', 'info' );
 
 		this._post( 'wpte_devzone_marketplace_deactivate', { plugin_file: plugin.plugin_file } )
 			.then( ( res ) => {
@@ -515,9 +519,13 @@ export class MarketplaceTab {
 
 	_saveToken( clear = false ) {
 		const token = clear ? '' : ( this._tokenInput?.value.trim() || '' );
+		DomHelper.setStatus( clear ? 'Clearing token\u2026' : 'Saving token\u2026', 'info' );
 		this._post( 'wpte_devzone_marketplace_save_token', { token } )
 			.then( ( res ) => {
-				if ( ! res.success ) return;
+				if ( ! res.success ) {
+					DomHelper.setStatus( res.data?.message || 'Failed to save token.', 'error', 4 );
+					return;
+				}
 				DomHelper.setStatus( res.data.message, 'success', 3 );
 				if ( this._tokenInput ) this._tokenInput.value = '';
 				if ( clear ) {
@@ -535,7 +543,10 @@ export class MarketplaceTab {
 					this._load();
 				}
 			} )
-			.catch( ( err ) => console.error( '[marketplace] save token failed', err ) );
+			.catch( ( err ) => {
+				console.error( '[marketplace] save token failed', err );
+				DomHelper.setStatus( 'Request failed.', 'error', 4 );
+			} );
 	}
 
 	_verifyToken() {

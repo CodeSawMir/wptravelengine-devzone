@@ -52,6 +52,7 @@ class Plugin {
 			new Tools\Logs\ToolWpteLogs(),
 			new Tools\Logs\ToolWordpressLogs(),
 			new Tools\Cron\ToolCron(),
+			new Tools\Tinker\ToolTinker(),
 			// new Tools\Perf\ToolPerf(),
 			new Tools\Marketplace\ToolMarketplace(),
 		] );

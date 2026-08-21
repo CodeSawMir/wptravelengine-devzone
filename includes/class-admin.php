@@ -84,7 +84,11 @@ class Admin {
 					'wordpress'      => [ 'title' => __( 'WordPress', 'wptravelengine-devzone' ), 'on_dev' => true ],
 					'wptravelengine' => __( 'WP Travel Engine', 'wptravelengine-devzone' ),
 				],
-			]
+			],
+			'tinker' => [
+				'title'    => '&lt;/&gt;',
+				'priority' => 11,
+			],
 		] );
 
 		uasort( $tabs, static function ( $a, $b ): int {

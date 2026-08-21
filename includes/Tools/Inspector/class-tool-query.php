@@ -4,6 +4,7 @@ namespace WPTravelEngineDevZone\Tools\Inspector;
 
 use WPTravelEngineDevZone\Admin;
 use WPTravelEngineDevZone\Tools\AbstractTool;
+use WPTravelEngineDevZone\Utils\ArrayOps;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -29,7 +30,7 @@ class ToolQuery extends AbstractTool {
 	public function enqueue_assets(): void {
 		wp_enqueue_style(
 			'wpte-devzone-search',
-			WPTE_DEVZONE_URL . 'assets/css/query.css',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/query.css',
 			[ 'wpte-devzone' ],
 			WPTE_DEVZONE_VERSION
 		);
@@ -149,8 +150,8 @@ class ToolQuery extends AbstractTool {
 
 		global $wpdb;
 
-		$type  = sanitize_text_field( wp_unslash( $_GET['type'] ?? '' ) );
-		$table = sanitize_text_field( wp_unslash( $_GET['table'] ?? '' ) );
+		$type  = sanitize_text_field( wp_unslash( $_POST['type'] ?? '' ) );
+		$table = sanitize_text_field( wp_unslash( $_POST['table'] ?? '' ) );
 
 		if ( ! in_array( $type, [ 'add', 'update', 'delete' ], true ) ) {
 			wp_send_json_error( [ 'message' => 'Invalid action type' ], 400 );
@@ -206,7 +207,7 @@ class ToolQuery extends AbstractTool {
 	private function _execute_insert( string $table, array $valid_columns ): void {
 		global $wpdb;
 
-		$raw  = (array) ( $_GET['columns'] ?? [] ); // phpcs:ignore WordPress.Security.NonceVerification
+		$raw  = (array) ( $_POST['columns'] ?? [] ); // phpcs:ignore WordPress.Security.NonceVerification
 		$data = [];
 		foreach ( $raw as $col => $val ) {
 			$col = sanitize_text_field( $col );
@@ -232,20 +233,78 @@ class ToolQuery extends AbstractTool {
 	private function _execute_update( string $table, array $valid_columns ): void {
 		global $wpdb;
 
-		$where_col = sanitize_text_field( wp_unslash( $_GET['where_column'] ?? '' ) );
-		$where_val = wp_unslash( $_GET['where_value'] ?? '' );
+		$where_col = sanitize_text_field( wp_unslash( $_POST['where_column'] ?? '' ) );
+		$where_val = wp_unslash( $_POST['where_value'] ?? '' );
 
 		if ( ! in_array( $where_col, $valid_columns, true ) ) {
 			wp_send_json_error( [ 'message' => 'where_column is required for UPDATE' ], 400 );
 		}
 
-		$raw  = (array) ( $_GET['columns'] ?? [] ); // phpcs:ignore WordPress.Security.NonceVerification
+		$raw  = (array) ( $_POST['columns'] ?? [] ); // phpcs:ignore WordPress.Security.NonceVerification
 		$data = [];
 		foreach ( $raw as $col => $val ) {
 			$col = sanitize_text_field( $col );
 			if ( in_array( $col, $valid_columns, true ) ) {
 				$data[ $col ] = wp_unslash( (string) $val );
 			}
+		}
+
+		// Tree-edited serialized columns arrive as dot-path => value patches, not
+		// the whole blob — e.g. tree_patches[meta_value][20220101.rrule.r_frequency]
+		// = "MONTHLY", with the leaf's original scalar type carried alongside in
+		// the parallel tree_types map (tree_types[meta_value][...] = "string").
+		// Every POST value is a string regardless, so without that the number 40
+		// would get written back as the string "40" instead of an int. Dots
+		// inside a bracketed key are just a literal string to PHP (no
+		// re-nesting), so both parse straight into path => value / path => type
+		// maps. Applying the patch against the row's own current value (fetched
+		// fresh, not trusted from the client) keeps the request small and never
+		// puts the serialized payload on the wire.
+		$patches = (array) ( $_POST['tree_patches'] ?? [] ); // phpcs:ignore WordPress.Security.NonceVerification
+		$types   = (array) ( $_POST['tree_types'] ?? [] ); // phpcs:ignore WordPress.Security.NonceVerification
+		foreach ( $patches as $col => $leaf_patches ) {
+			$col = sanitize_text_field( $col );
+			if ( ! in_array( $col, $valid_columns, true ) || ! is_array( $leaf_patches ) ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$current = $wpdb->get_var( $wpdb->prepare( "SELECT `{$col}` FROM `{$table}` WHERE `{$where_col}` = %s", $where_val ) );
+
+			// Same two formats the tree view itself understands (see ToolBeautifier::
+			// unserialize_data) — try PHP serialization first, fall back to JSON.
+			$decoded = maybe_unserialize( $current );
+			$is_json = false;
+			if ( ! is_array( $decoded ) ) {
+				$json_decoded = json_decode( (string) $current, true );
+				if ( is_array( $json_decoded ) && JSON_ERROR_NONE === json_last_error() ) {
+					$decoded = $json_decoded;
+					$is_json = true;
+				}
+			}
+
+			if ( ! is_array( $decoded ) ) {
+				wp_send_json_error( [ 'message' => "Column `{$col}` is not a serialized array or JSON object — cannot apply tree edits." ], 400 );
+			}
+
+			// Only for the array_key_exists() check — unknown paths are ignored
+			// rather than used to invent new structure.
+			$flat       = ArrayOps::flatten( $decoded );
+			$ops        = ArrayOps::make( $decoded );
+			$col_types  = (array) ( $types[ $col ] ?? [] );
+
+			foreach ( $leaf_patches as $path => $value ) {
+				$path = (string) wp_unslash( $path );
+				if ( '' === $path || ! array_key_exists( $path, $flat ) ) {
+					continue; // Unknown path — ignore rather than inventing structure.
+				}
+				$type = sanitize_key( wp_unslash( $col_types[ $path ] ?? '' ) );
+				$ops->set( $path, self::coerce_leaf_value( $type, wp_unslash( $value ) ) );
+			}
+
+			$data[ $col ] = $is_json
+				? wp_json_encode( $ops->value() )
+				: serialize( $ops->value() ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 		}
 
 		if ( empty( $data ) ) {
@@ -262,11 +321,37 @@ class ToolQuery extends AbstractTool {
 		wp_send_json_success( [ 'message' => $result . ' row(s) updated' ] );
 	}
 
+	/**
+	 * Coerces a tree patch's incoming (always-string) value to the scalar type
+	 * the client declared for that leaf — the tree UI already knows this (it's
+	 * what drove the type badge and the bool leaf rendering as a select rather
+	 * than a text field), so trusting it directly is simpler and more exact
+	 * than re-deriving it from whatever the column's current value happens to
+	 * be. Unrecognised/missing type falls back to string, same as a value that
+	 * was already a string.
+	 *
+	 * @since next
+	 */
+	private static function coerce_leaf_value( string $type, $value ) {
+		switch ( $type ) {
+			case 'bool':
+				return in_array( strtolower( (string) $value ), [ '1', 'true', 'yes' ], true );
+			case 'int':
+				return (int) $value;
+			case 'float':
+				return (float) $value;
+			case 'null':
+				return '' === $value ? null : (string) $value;
+			default:
+				return (string) $value;
+		}
+	}
+
 	private function _execute_delete( string $table, array $valid_columns ): void {
 		global $wpdb;
 
-		$where_col = sanitize_text_field( wp_unslash( $_GET['where_column'] ?? '' ) );
-		$where_val = wp_unslash( $_GET['where_value'] ?? '' );
+		$where_col = sanitize_text_field( wp_unslash( $_POST['where_column'] ?? '' ) );
+		$where_val = wp_unslash( $_POST['where_value'] ?? '' );
 
 		if ( ! in_array( $where_col, $valid_columns, true ) ) {
 			wp_send_json_error( [ 'message' => 'where_column is required for DELETE' ], 400 );

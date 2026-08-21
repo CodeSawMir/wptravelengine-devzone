@@ -52,6 +52,12 @@ class ToolMarketplace extends AbstractTool {
 	}
 
 	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-marketplace',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/marketplace.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
 		wp_enqueue_script(
 			'wpte-devzone-marketplace',
 			WPTE_DEVZONE_URL . 'assets/js/tabs/marketplace-tab.js',

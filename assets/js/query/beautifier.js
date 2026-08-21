@@ -1,6 +1,5 @@
-import { DomHelper }  from '../dom-helper.js';
-import { UnserTree } from './unser-tree.js';
-import { Icons }     from '../constants.js';
+import { HierarchyView } from '../utilities/hierarchy-view.js';
+import { Icons }         from '../constants.js';
 
 export class Beautifier {
 	// Cross-visit state — persists across tab switches, cleared only on page reload.
@@ -198,11 +197,11 @@ export class Beautifier {
 				.then((r) => r.json())
 				.then((res) => {
 					this.renderResult(res);
-					window.wteDbgClearStatus?.();
+					window.wteDbgSetStatus?.(res.success ? `Unserialized ${ Icons.CHECK }` : 'Unserialize failed', res.success ? 'success' : 'error', 2);
 				})
 				.catch((e) => {
 					if (e.name === 'AbortError') {
-						window.wteDbgSetStatus?.(`Cancelled ${ Icons.EM_DASH } unserialize`, 'cancelled');
+						window.wteDbgSetStatus?.(`Cancelled ${ Icons.EM_DASH } unserialize`, 'cancelled', 2);
 						return;
 					}
 					window.wteDbgSetStatus?.('Request failed.', 'error', 3);
@@ -235,11 +234,11 @@ export class Beautifier {
 					.then((r) => r.json())
 					.then((res) => {
 						this.renderResult(res);
-						window.wteDbgClearStatus?.();
+						window.wteDbgSetStatus?.(res.success ? `Parsed ${ Icons.CHECK }` : 'var_dump parse failed', res.success ? 'success' : 'error', 2);
 					})
 					.catch((e) => {
 						if (e.name === 'AbortError') {
-							window.wteDbgSetStatus?.(`Cancelled ${ Icons.EM_DASH } var_dump`, 'cancelled');
+							window.wteDbgSetStatus?.(`Cancelled ${ Icons.EM_DASH } var_dump`, 'cancelled', 2);
 							return;
 						}
 						window.wteDbgSetStatus?.('Request failed.', 'error', 3);
@@ -260,7 +259,9 @@ export class Beautifier {
 			if (format === 'unknown') {
 				this._renderFallback(outputEl, tree);
 			} else {
-				const treeEl = UnserTree.build(tree);
+				const { expandAllBtn, treeEl } = HierarchyView.renderTreeSection( tree, { maxLen: 120 } );
+				expandAllBtn.classList.add( 'wte-dbg-unser-format-badge' );
+
 				const badgeRow = document.createElement('div');
 				badgeRow.className = 'wte-dbg-unser-badge-row';
 
@@ -271,25 +272,8 @@ export class Beautifier {
 					badgeRow.appendChild(lbl);
 				}
 
-				const expandAll = document.createElement('span');
-				expandAll.className = 'wte-dbg-count wte-dbg-unser-format-badge wte-dbg-expand-all';
-				expandAll.textContent = Icons.EXPAND_ALL;
-				expandAll.title = 'Expand all';
-				expandAll.addEventListener('click', () => {
-					const expanding = expandAll.dataset.state !== 'expanded';
-					expandAll.dataset.state = expanding ? 'expanded' : '';
-					expandAll.textContent = expanding ? Icons.COLLAPSE_ALL : Icons.EXPAND_ALL;
-					expandAll.title = expanding ? 'Collapse all' : 'Expand all';
-					treeEl.querySelectorAll('.wte-dbg-node').forEach(el => {
-						el.open = expanding;
-					});
-					treeEl.querySelectorAll('.wte-dbg-value').forEach(el => {
-						DomHelper.toggleValueExpand( el, expanding, 120 );
-					});
-				});
-				badgeRow.insertBefore(expandAll, badgeRow.firstChild);
+				badgeRow.insertBefore(expandAllBtn, badgeRow.firstChild);
 
-				DomHelper.setupValueClicks( treeEl, 120 );
 				outputEl.appendChild(badgeRow);
 				outputEl.appendChild(treeEl);
 			}

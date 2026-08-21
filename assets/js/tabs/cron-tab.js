@@ -450,6 +450,7 @@ export class CronTab {
 		const row = btn.closest( 'tr' );
 		btn.disabled = true;
 		row?.classList.add( 'is-running' );
+		DomHelper.setStatus( 'Running ' + hook + '\u2026', 'info' );
 
 		fetch( ajaxurl, {
 			method: 'POST',
@@ -486,6 +487,7 @@ export class CronTab {
 		const row = btn.closest( 'tr' );
 		btn.disabled = true;
 		row?.classList.add( 'is-running' );
+		DomHelper.setStatus( 'Scheduling ' + hook + '\u2026', 'info' );
 
 		fetch( ajaxurl, {
 			method: 'POST',

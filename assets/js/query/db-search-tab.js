@@ -1,6 +1,8 @@
-import { Dom }        from './dom.js';
-import { Beautifier } from './beautifier.js';
-import { DomHelper }  from '../dom-helper.js';
+import { Dom }             from './dom.js';
+import { Beautifier }      from './beautifier.js';
+import { DomHelper }       from '../dom-helper.js';
+import { Icons }           from '../constants.js';
+import { HierarchyView }   from '../utilities/hierarchy-view.js';
 
 export class DbSearchTab {
 	// AbortControllers for cancelling in-flight requests.
@@ -13,7 +15,9 @@ export class DbSearchTab {
 		this.wrap             = wrap;
 		this.ajaxurl          = ajaxurl;
 		this.nonce            = nonce;
+		this._treeEditor      = new HierarchyView( { ajaxurl, nonce } );
 		this._selectedRow     = null;
+		this._selectedRowData = null;
 		this._actionSection   = null;
 		this._actionIndicator = null;
 		this._insertBtn       = null;
@@ -99,6 +103,7 @@ export class DbSearchTab {
 
 		Dom.setTextContent( tablesList, '' );
 		Dom.appendShimmer( tablesList, 8, 'Loading tables\u2026' );
+		window.wteDbgSetStatus?.( 'Loading tables\u2026', 'info' );
 
 		const params = new URLSearchParams( {
 			action:      'wpte_devzone_db_tables',
@@ -109,11 +114,12 @@ export class DbSearchTab {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				Dom.setTextContent( tablesList, '' );
-				window.wteDbgClearStatus?.();
 				if ( ! res.success ) {
 					tablesList.appendChild( Dom.makePara( 'wte-dbg-empty', 'Error loading tables.' ) );
+					window.wteDbgSetStatus?.( 'Error loading tables', 'error', 2 );
 					return;
 				}
+				window.wteDbgSetStatus?.( 'Tables loaded', 'success', 2 );
 				const groupLabels = { wte: 'WP Travel Engine', wp: 'WordPress', other: 'Other' };
 				let   currentGroup = null;
 
@@ -162,10 +168,13 @@ export class DbSearchTab {
 				}
 			} )
 			.catch( ( e ) => {
-				if ( e.name === 'AbortError' ) return;
+				if ( e.name === 'AbortError' ) {
+					window.wteDbgSetStatus?.( 'Cancelled \u2014 tables', 'cancelled', 2 );
+					return;
+				}
 				Dom.setTextContent( tablesList, '' );
-				window.wteDbgClearStatus?.();
 				tablesList.appendChild( Dom.makePara( 'wte-dbg-empty', 'Request failed.' ) );
+				window.wteDbgSetStatus?.( 'Request failed', 'error', 2 );
 			} );
 	}
 
@@ -178,6 +187,7 @@ export class DbSearchTab {
 
 		Dom.setTextContent( queryPanel, '' );
 		Dom.appendShimmer( queryPanel, 5, 'Loading columns\u2026' );
+		window.wteDbgSetStatus?.( 'Loading ' + tableName + ' columns\u2026', 'info' );
 
 		const params = new URLSearchParams( {
 			action:      'wpte_devzone_db_columns',
@@ -189,13 +199,14 @@ export class DbSearchTab {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				Dom.setTextContent( queryPanel, '' );
-				window.wteDbgClearStatus?.();
 				if ( ! res.success ) {
 					queryPanel.appendChild( Dom.makePara( 'wte-dbg-empty', 'Error loading columns.' ) );
+					window.wteDbgSetStatus?.( 'Error loading columns', 'error', 2 );
 					return;
 				}
 				const columns = res.data.columns.map( ( c ) => c.Field );
 				this.renderQueryBuilder( tableName, columns, group );
+				window.wteDbgSetStatus?.( tableName + ' loaded', 'success', 2 );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
@@ -203,8 +214,8 @@ export class DbSearchTab {
 					return;
 				}
 				Dom.setTextContent( queryPanel, '' );
-				window.wteDbgClearStatus?.();
 				queryPanel.appendChild( Dom.makePara( 'wte-dbg-empty', 'Request failed.' ) );
+				window.wteDbgSetStatus?.( 'Request failed', 'error', 2 );
 			} );
 	}
 
@@ -243,6 +254,7 @@ export class DbSearchTab {
 
 				truncateBtn.disabled    = true;
 				truncateBtn.textContent = 'Deleting\u2026';
+				window.wteDbgSetStatus?.( 'Deleting all rows from ' + tableName + '\u2026', 'info' );
 
 				fetch( this.ajaxurl, {
 					method: 'POST',
@@ -575,6 +587,7 @@ export class DbSearchTab {
 		dismissBtn.addEventListener( 'click', ( e ) => {
 			e.stopPropagation();
 			this._selectedRow = null;
+			this._selectedRowData = null;
 			this.wrap.querySelectorAll( '.wte-dbg-row-radio:checked' ).forEach( ( r ) => { r.checked = false; } );
 			this.wrap.querySelectorAll( 'tr.is-row-selected' ).forEach( ( r ) => r.classList.remove( 'is-row-selected' ) );
 			this._clearRowIndicator();
@@ -650,7 +663,28 @@ export class DbSearchTab {
 		const utheadRow = document.createElement( 'tr' );
 		columns.forEach( ( col ) => {
 			const th = document.createElement( 'th' );
-			th.textContent = col;
+
+			// Expands/collapses this column's tree. Hidden until a row is selected
+			// and that column's value actually renders as a tree (see _loadTreeForCell).
+			const expandBtn = document.createElement( 'span' );
+			expandBtn.className     = 'wte-dbg-expand-all wte-dbg-th-expand-all';
+			expandBtn.textContent   = Icons.EXPAND_ALL;
+			expandBtn.title         = 'Expand all';
+			expandBtn.style.display = 'none';
+			expandBtn.addEventListener( 'click', () => {
+				const inp    = this._updateSection?.querySelector( `.wte-dbg-update-input[data-col="${ CSS.escape( col ) }"]` );
+				const treeEl = inp?.closest( '.wte-dbg-update-cell' )?.querySelector( '.wte-dbg-update-tree' );
+				if ( ! treeEl ) return;
+
+				const expanding = expandBtn.dataset.state !== 'expanded';
+				expandBtn.dataset.state = expanding ? 'expanded' : '';
+				expandBtn.textContent   = expanding ? Icons.COLLAPSE_ALL : Icons.EXPAND_ALL;
+				expandBtn.title         = expanding ? 'Collapse all' : 'Expand all';
+				treeEl.querySelectorAll( '.wte-dbg-node' ).forEach( ( el ) => { el.open = expanding; } );
+			} );
+
+			th.appendChild( expandBtn );
+			th.appendChild( document.createTextNode( col ) );
 			utheadRow.appendChild( th );
 		} );
 		uthead.appendChild( utheadRow );
@@ -660,6 +694,7 @@ export class DbSearchTab {
 		const updateInputRow = document.createElement( 'tr' );
 		columns.forEach( ( col ) => {
 			const td  = document.createElement( 'td' );
+			td.className = 'wte-dbg-update-cell';
 			const inp = this._makeEditableCell( 'wte-dbg-update-input', col, '' );
 			td.appendChild( inp );
 			updateInputRow.appendChild( td );
@@ -752,9 +787,51 @@ export class DbSearchTab {
 				params.append( 'columns[' + inp.dataset.col + ']', inp.value );
 			} );
 		} else if ( 'update' === type ) {
-			this._updateSection?.querySelectorAll( '.wte-dbg-update-input' ).forEach( ( inp ) => {
-				params.append( 'columns[' + inp.dataset.col + ']', inp.value );
+			// Only send what the user actually touched — resending a whole row (or a
+			// whole serialized blob) risks tripping a WAF rule on untouched data and
+			// defeats the point of a single-field edit.
+			const original = this._selectedRowData || {};
+			const cells    = [ ...( this._updateSection?.querySelectorAll( '.wte-dbg-update-cell' ) || [] ) ];
+			let   changed  = 0;
+
+			cells.forEach( ( td ) => {
+				const inp = td.querySelector( '.wte-dbg-update-input' );
+				const col = inp?.dataset.col;
+				if ( ! col ) return;
+
+				if ( HierarchyView.isActive( td ) ) {
+					// Send only the changed leaves, dot-path as the key, e.g.
+					// tree_patches[meta_value][20220101.rrule.r_frequency] = "MONTHLY"
+					// — PHP parses the bracketed key as a literal string (dots don't
+					// nest), so the server gets a plain path => value map. The server
+					// applies these to its own copy of the current value and
+					// re-serializes, so the edited blob never rides the request.
+					//
+					// tree_types carries the same paths' original scalar type
+					// ("int", "bool", ...) — every form field's value is a string
+					// regardless, so without this a numeric leaf would get written
+					// back as the string "40" instead of the int 40.
+					HierarchyView.collectContainerChanges( td ).forEach( ( { path, value, type } ) => {
+						params.append( `tree_patches[${ col }][${ path }]`, value );
+						params.append( `tree_types[${ col }][${ path }]`, type );
+						changed++;
+					} );
+					return;
+				}
+
+				const before    = original[ col ];
+				const beforeStr = ( before === null || before === undefined ) ? '' : String( before );
+				if ( inp.value === beforeStr ) return;
+				changed++;
+				params.append( 'columns[' + col + ']', inp.value );
 			} );
+
+			if ( ! changed ) {
+				window.wteDbgSetStatus?.( 'Nothing changed.', 'info', 2 );
+				executeBtn.disabled    = false;
+				executeBtn.textContent = origText;
+				return;
+			}
 		}
 
 		if ( 'update' === type || 'delete' === type ) {
@@ -763,13 +840,29 @@ export class DbSearchTab {
 		}
 
 		window.wteDbgSetStatus?.( 'Executing…', 'info' );
-		fetch( this.ajaxurl + '?' + params, { signal: DbSearchTab._executeActionCtrl.signal } )
+		// POST, not GET — an update/insert value can be arbitrarily large serialized
+		// PHP data, which a server-side firewall (or the URL length limit) rejects
+		// when it rides along in the query string instead of the request body.
+		fetch( this.ajaxurl, {
+			method: 'POST',
+			body:   params,
+			signal: DbSearchTab._executeActionCtrl.signal,
+		} )
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				if ( res.success ) {
 					window.wteDbgSetStatus?.( res.data.message, 'success', 2 );
 					if ( 'delete' === type || 'add' === type ) {
 						this._expandLeftSidebar();
+					}
+					if ( 'update' === type || 'delete' === type ) {
+						// Selecting a row for update/delete closes Filters to make room
+						// for the action panel (see the row-radio "change" listener).
+						// That panel is gone after a successful run — restore Filters,
+						// same as the action panel's own dismiss (×) button does.
+						resultsWrap.closest( '.wte-dbg-query-builder' )
+							?.querySelector( '.wte-dbg-filters-section' )
+							?.classList.add( 'is-open' );
 					}
 					this.runQuery( tableName, andFilters, orFilters, limit, 0, resultsWrap );
 				} else {
@@ -898,6 +991,7 @@ export class DbSearchTab {
 	runQuery( tableName, andFilters, orFilters, limit, offset, resultsWrap ) {
 		this._saveQueryState( tableName, andFilters, orFilters );
 		this._selectedRow = null;
+		this._selectedRowData = null;
 		this._clearRowIndicator();
 
 		DbSearchTab._runQueryCtrl?.abort();
@@ -905,6 +999,7 @@ export class DbSearchTab {
 
 		Dom.setTextContent( resultsWrap, '' );
 		Dom.appendShimmer( resultsWrap, 6, 'Running query\u2026' );
+		window.wteDbgSetStatus?.( 'Running query\u2026', 'info' );
 
 		const params = new URLSearchParams( {
 			action:      'wpte_devzone_db_query',
@@ -929,12 +1024,13 @@ export class DbSearchTab {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				Dom.setTextContent( resultsWrap, '' );
-				window.wteDbgClearStatus?.();
 				if ( ! res.success ) {
 					resultsWrap.appendChild( Dom.makePara( 'wte-dbg-empty', 'Query error.' ) );
+					window.wteDbgSetStatus?.( 'Query error', 'error', 2 );
 					return;
 				}
 				this.renderResults( res.data, tableName, andFilters, orFilters, limit, resultsWrap );
+				window.wteDbgSetStatus?.( 'Query complete', 'success', 2 );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
@@ -942,8 +1038,8 @@ export class DbSearchTab {
 					return;
 				}
 				Dom.setTextContent( resultsWrap, '' );
-				window.wteDbgClearStatus?.();
 				resultsWrap.appendChild( Dom.makePara( 'wte-dbg-empty', 'Request failed.' ) );
+				window.wteDbgSetStatus?.( 'Request failed', 'error', 2 );
 			} );
 	}
 
@@ -1059,6 +1155,7 @@ export class DbSearchTab {
 
 	_openAddAction() {
 		this._selectedRow = null;
+		this._selectedRowData = null;
 		this._collapseSidebars();
 		// Deselect any checked radio and remove row highlight
 		this.wrap.querySelectorAll( '.wte-dbg-row-radio:checked' ).forEach( ( r ) => { r.checked = false; } );
@@ -1084,7 +1181,8 @@ export class DbSearchTab {
 	}
 
 	_selectRow( col, val, rowData = {} ) {
-		this._selectedRow = { col, val };
+		this._selectedRow     = { col, val };
+		this._selectedRowData = rowData;
 		this._collapseSidebars();
 		if ( this._actionSection ) {
 			this._actionSection.classList.add( 'is-row-visible', 'is-open' );
@@ -1114,6 +1212,12 @@ export class DbSearchTab {
 			inp.placeholder = v === null ? 'NULL' : '';
 			inp.style.height = 'auto';
 			inp.style.height = ( inp.scrollHeight || 0 ) + 'px';
+
+			const td = inp.closest( '.wte-dbg-update-cell' );
+			this._exitTreeMode( td );
+			if ( HierarchyView.looksSerializedTree( inp.value ) ) {
+				this._loadTreeForCell( td, inp );
+			}
 		} );
 		this._updateActionRow( 'update' );
 	}
@@ -1156,6 +1260,90 @@ export class DbSearchTab {
 			autoGrow();
 		} );
 		return ta;
+	}
+
+	// -------------------------------------------------------------------------
+	// Tree editing for serialized column values
+	//
+	// A serialized array/object column renders as an editable tree in place of
+	// the raw textarea. Execute UPDATE never reconstructs or resends the whole
+	// blob — it collects only the leaves the user actually touched as
+	// { path, value } pairs (e.g. "20220101.rrule.r_frequency" → "MONTHLY") and
+	// the server applies those patches to its own copy of the current value.
+	// This is what keeps the request small and off a WAF's radar even when the
+	// underlying column holds a large nested payload.
+	// -------------------------------------------------------------------------
+
+	_loadTreeForCell( td, textarea ) {
+		this._treeEditor.load( td, textarea, textarea.value, {
+			onShown: ( treeEl ) => {
+				// Query-tab-specific marker — the pill inputs, "is-dirty"
+				// highlight etc. in query.css are scoped under this class.
+				treeEl.classList.add( 'wte-dbg-update-tree' );
+
+				// Only now is there anything whose collapse could reflow other
+				// columns — lock widths from here on. Before this, auto layout
+				// sizes columns from the real (textarea) content as normal.
+				const table = td.closest( 'table' );
+				if ( table ) this._lockColumnWidths( table );
+
+				// Only now do we know this column actually renders as a tree — a
+				// freshly built one always starts fully expanded, so the header
+				// icon starts in "Collapse all" state to match.
+				const expandBtn = this._expandBtnFor( td );
+				if ( expandBtn ) {
+					expandBtn.dataset.state = 'expanded';
+					expandBtn.textContent   = Icons.COLLAPSE_ALL;
+					expandBtn.title         = 'Collapse all';
+					expandBtn.style.display = '';
+				}
+			},
+		} );
+	}
+
+	/** Locates the expand-all icon in this cell's column header. */
+	_expandBtnFor( td ) {
+		const colIdx = [ ...td.parentElement.children ].indexOf( td );
+		return td.closest( 'table' )?.querySelector( `thead tr th:nth-child(${ colIdx + 1 }) .wte-dbg-th-expand-all` ) ?? null;
+	}
+
+	_exitTreeMode( td ) {
+		if ( ! td ) return;
+		const textarea = td.querySelector( '.wte-dbg-update-input' );
+		this._treeEditor.exit( td, textarea );
+
+		const expandBtn = this._expandBtnFor( td );
+		if ( expandBtn ) expandBtn.style.display = 'none';
+
+		// Nothing left that could reflow on collapse — let auto layout take back over.
+		const table = td.closest( 'table' );
+		if ( table && ! HierarchyView.isActive( table ) ) {
+			this._unlockColumnWidths( table );
+		}
+	}
+
+	/**
+	 * Freezes every column at its current rendered width, then switches to
+	 * table-layout: fixed.
+	 *
+	 * Just adding the "fixed" class isn't enough — the fixed algorithm doesn't
+	 * preserve whatever auto layout had already computed, it recalculates from
+	 * each column's explicit CSS width (falling back to equal-width columns
+	 * when none is set). Capturing the live width into an inline style first is
+	 * what actually locks in the layout as-is instead of snapping to something
+	 * else the moment "fixed" applies.
+	 */
+	_lockColumnWidths( table ) {
+		if ( table.classList.contains( 'wte-dbg-lock-col-widths' ) ) return;
+		table.querySelectorAll( ':scope > thead > tr > th' ).forEach( ( th ) => {
+			th.style.width = th.getBoundingClientRect().width + 'px';
+		} );
+		table.classList.add( 'wte-dbg-lock-col-widths' );
+	}
+
+	_unlockColumnWidths( table ) {
+		table.classList.remove( 'wte-dbg-lock-col-widths' );
+		table.querySelectorAll( ':scope > thead > tr > th' ).forEach( ( th ) => { th.style.width = ''; } );
 	}
 
 	_expandLeftSidebar() {

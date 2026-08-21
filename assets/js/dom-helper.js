@@ -52,9 +52,13 @@ export class DomHelper {
 		let downX = 0, downY = 0;
 		container.addEventListener( 'mousedown', ( e ) => { downX = e.clientX; downY = e.clientY; } );
 		container.addEventListener( 'click', ( e ) => {
-			// If the mouse moved more than 4px between mousedown and click the
-			// user is dragging to select text — don't toggle.
-			if ( Math.abs( e.clientX - downX ) > 4 || Math.abs( e.clientY - downY ) > 4 ) return;
+			// Skip the toggle when the user was selecting text: either a plain
+			// drag (pointer moved >4px between mousedown and click) or a
+			// double-click word-select (near-zero movement but leaves a
+			// non-empty selection).
+			const dragged  = Math.abs( e.clientX - downX ) > 4 || Math.abs( e.clientY - downY ) > 4;
+			const selected = window.getSelection().toString().length > 0;
+			if ( dragged || selected ) return;
 			const val = e.target.closest( '.wte-dbg-value[data-raw]' );
 			if ( val ) DomHelper.toggleValueExpand( val, undefined, maxLen );
 		} );
@@ -169,7 +173,7 @@ export class DomHelper {
 	}
 
 	/** Show the global status note with a message. type: 'info' | 'success' | 'error' | 'cancelled' */
-	static setStatus( msg, type = null, secs = null ) {
+	static setStatus( msg, type = null, secs = 3 ) {
 		const wrap = document.getElementById( 'wte-dbg-wp-debug-notice' );
 		if ( ! wrap ) return;
 		const note = wrap.querySelector( '.wte-dbg-loader-note' );
