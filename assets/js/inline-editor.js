@@ -8,6 +8,7 @@
 /* global wpteDbg */
 
 import { DomHelper } from './dom-helper.js';
+import { Icons }     from './constants.js';
 
 const { ajaxurl, nonce } = wpteDbg;
 
@@ -37,8 +38,8 @@ export class InlineEditor {
 		input.value     = raw;
 		input.className = 'wte-dbg-input';
 
-		const saveBtn   = DomHelper.makeButton( '\u2713', 'wte-dbg-save' );
-		const cancelBtn = DomHelper.makeButton( '\u2717', 'wte-dbg-cancel' );
+		const saveBtn   = DomHelper.makeButton( Icons.CHECK, 'wte-dbg-save' );
+		const cancelBtn = DomHelper.makeButton( Icons.CROSS, 'wte-dbg-cancel' );
 
 		valueEl.replaceWith( input );
 		editBtn.replaceWith( saveBtn, cancelBtn );
@@ -116,7 +117,7 @@ export class InlineEditor {
 		this._saveController?.abort();
 		this._saveController = new AbortController();
 
-		DomHelper.setStatus( 'Saving\u2026' );
+		DomHelper.setStatus( `Saving${ Icons.ELLIPSIS }` );
 
 		fetch( ajaxurl, {
 			method: 'POST',
@@ -126,7 +127,7 @@ export class InlineEditor {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				if ( res.success ) {
-					DomHelper.setStatus( 'Saved \u2713', 'success' );
+					DomHelper.setStatus( `Saved ${ Icons.CHECK }`, 'success' );
 					setTimeout( () => DomHelper.clearStatus(), 2000 );
 					this.flashSuccess( row, value );
 				} else {
@@ -138,7 +139,7 @@ export class InlineEditor {
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 ' + saveLabel + ' save', 'cancelled' );
+					DomHelper.setStatus( `Cancelled ${ Icons.EM_DASH } ${ saveLabel } save`, 'cancelled' );
 					return;
 				}
 				DomHelper.setStatus( 'Network error', 'error' );
@@ -150,14 +151,14 @@ export class InlineEditor {
 	doDeleteOption( btn, optionName ) {
 		btn.disabled = true;
 		const svgIcon = btn.querySelector( 'svg' ) ? btn.querySelector( 'svg' ).cloneNode( true ) : null;
-		btn.textContent = '\u231b';
+		btn.textContent = Icons.HOURGLASS;
 
 		const restoreIcon = () => {
 			btn.textContent = '';
 			if ( svgIcon ) btn.appendChild( svgIcon.cloneNode( true ) );
 		};
 
-		DomHelper.setStatus( 'Deleting\u2026' );
+		DomHelper.setStatus( `Deleting${ Icons.ELLIPSIS }` );
 
 		fetch( ajaxurl, {
 			method: 'POST',
@@ -170,7 +171,7 @@ export class InlineEditor {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				if ( res.success ) {
-					DomHelper.setStatus( 'Deleted \u2713', 'success' );
+					DomHelper.setStatus( `Deleted ${ Icons.CHECK }`, 'success' );
 					setTimeout( () => DomHelper.clearStatus(), 2000 );
 					const block = btn.closest( '.wte-dbg-option-block' );
 					if ( block ) {
@@ -198,7 +199,7 @@ export class InlineEditor {
 		this._postFieldController?.abort();
 		this._postFieldController = new AbortController();
 
-		DomHelper.setStatus( 'Saving\u2026' );
+		DomHelper.setStatus( `Saving${ Icons.ELLIPSIS }` );
 
 		fetch( ajaxurl, {
 			method: 'POST',
@@ -214,7 +215,7 @@ export class InlineEditor {
 			.then( ( r ) => r.json() )
 			.then( ( res ) => {
 				if ( res.success ) {
-					DomHelper.setStatus( 'Saved \u2713', 'success' );
+					DomHelper.setStatus( `Saved ${ Icons.CHECK }`, 'success' );
 					setTimeout( () => DomHelper.clearStatus(), 2000 );
 					const row = selectEl.closest( '.wte-dbg-row' );
 					if ( row ) this.flash( row, 'flash-ok' );
@@ -240,7 +241,7 @@ export class InlineEditor {
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
-					DomHelper.setStatus( 'Cancelled \u2014 ' + field + ' (#' + postId + ') save', 'cancelled' );
+					DomHelper.setStatus( `Cancelled ${ Icons.EM_DASH } ${ field } (#${ postId }) save`, 'cancelled' );
 					return;
 				}
 				DomHelper.setStatus( 'Network error', 'error' );

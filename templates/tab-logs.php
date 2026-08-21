@@ -37,7 +37,7 @@ if ( wp_doing_ajax() ) {
 	$_SERVER['REQUEST_URI'] = $parsed['path'] . '?' . http_build_query( // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		array_filter( array(
 			'page'    => $devzone_slug,
-			'tab'     => 'logs',
+			'tab'     => 'wptravelengine',
 			'view'    => $_GET['view'] ?? null,
 			'file'    => $_GET['file'] ?? null,
 			'orderby' => $_GET['orderby'] ?? null,
@@ -57,7 +57,7 @@ if ( wp_doing_ajax() ) {
 $fix_redirect = static function ( string $location ) use ( $devzone_slug, $logs_slug ): string {
 	return str_replace(
 		'page=' . $logs_slug,
-		'page=' . $devzone_slug . '&tab=logs',
+		'page=' . $devzone_slug . '&tab=wptravelengine',
 		$location
 	);
 };
@@ -69,14 +69,14 @@ $html = ob_get_clean();
 
 remove_filter( 'wp_redirect', $fix_redirect );
 
-// Rewrite all href/JS URLs: page=wptravelengine-logs → page=wptravelengine-devzone&tab=logs
+// Rewrite all href/JS URLs: page=wptravelengine-logs → page=wptravelengine-devzone&tab=wptravelengine
 $html = str_replace(
 	'page=' . $logs_slug,
-	'page=' . $devzone_slug . '&tab=logs',
+	'page=' . $devzone_slug . '&tab=wptravelengine',
 	$html
 );
 
-// Fix the GET-form hidden input value and inject a tab=logs hidden input.
+// Fix the GET-form hidden input value and inject a tab=wptravelengine hidden input.
 $html = str_replace(
 	'name="page" value="' . $logs_slug . '"',
 	'name="page" value="' . $devzone_slug . '"><input type="hidden" name="tab" value="logs"',

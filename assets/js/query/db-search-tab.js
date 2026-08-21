@@ -1,5 +1,6 @@
 import { Dom }        from './dom.js';
 import { Beautifier } from './beautifier.js';
+import { DomHelper }  from '../dom-helper.js';
 
 export class DbSearchTab {
 	// AbortControllers for cancelling in-flight requests.
@@ -24,6 +25,7 @@ export class DbSearchTab {
 		this._updateSection     = null;
 		this._insertLabelSep    = null;
 		this._actionLabelSep    = null;
+		this._pendingRestore    = null;
 	}
 
 	init() {
@@ -142,12 +144,22 @@ export class DbSearchTab {
 					item.addEventListener( 'click', () => {
 						tablesList.querySelectorAll( '.wte-dbg-table-item' ).forEach( ( i ) => i.classList.remove( 'is-active' ) );
 						item.classList.add( 'is-active' );
-						this.loadTable( t.name );
+						this.loadTable( t.name, t.group );
 					} );
 
 					tablesList.appendChild( item );
 				} );
-				tablesList.querySelector( '.wte-dbg-table-item' )?.click();
+				const saved     = this._loadQueryState();
+				this._pendingRestore = saved;
+				const savedItem = saved.table
+					? tablesList.querySelector( '.wte-dbg-table-item[data-table="' + CSS.escape( saved.table ) + '"]' )
+					: null;
+				if ( savedItem ) {
+					savedItem.click();
+				} else {
+					this._pendingRestore = null;
+					tablesList.querySelector( '.wte-dbg-table-item' )?.click();
+				}
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) return;
@@ -157,7 +169,7 @@ export class DbSearchTab {
 			} );
 	}
 
-	loadTable( tableName ) {
+	loadTable( tableName, group = 'other' ) {
 		const wrap       = this.wrap;
 		const queryPanel = wrap.querySelector( '.wte-dbg-db-query-panel' );
 
@@ -183,7 +195,7 @@ export class DbSearchTab {
 					return;
 				}
 				const columns = res.data.columns.map( ( c ) => c.Field );
-				this.renderQueryBuilder( tableName, columns );
+				this.renderQueryBuilder( tableName, columns, group );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
@@ -196,7 +208,7 @@ export class DbSearchTab {
 			} );
 	}
 
-	renderQueryBuilder( tableName, columns ) {
+	renderQueryBuilder( tableName, columns, group = 'other' ) {
 		const wrap       = this.wrap;
 		const queryPanel = wrap.querySelector( '.wte-dbg-db-query-panel' );
 
@@ -217,14 +229,59 @@ export class DbSearchTab {
 		colsSpan.textContent = columns.length + ' columns';
 		header.appendChild( colsSpan );
 
+		// "Delete All Rows" — only for WTE tables.
+		if ( group === 'wte' ) {
+			const truncateBtn = document.createElement( 'button' );
+			truncateBtn.type        = 'button';
+			truncateBtn.className   = 'wte-dbg-truncate-btn';
+			truncateBtn.textContent = 'Delete All Rows';
+
+			truncateBtn.addEventListener( 'click', () => {
+				if ( ! window.confirm( 'Delete ALL rows from ' + tableName + '?\n\nThis cannot be undone.' ) ) {
+					return;
+				}
+
+				truncateBtn.disabled    = true;
+				truncateBtn.textContent = 'Deleting\u2026';
+
+				fetch( this.ajaxurl, {
+					method: 'POST',
+					body:   new URLSearchParams( {
+						action:      'wpte_devzone_db_truncate',
+						_ajax_nonce: this.nonce,
+						table:       tableName,
+					} ),
+				} )
+					.then( ( r ) => r.json() )
+					.then( ( res ) => {
+						truncateBtn.disabled    = false;
+						truncateBtn.textContent = 'Delete All Rows';
+						if ( res.success ) {
+							window.wteDbgSetStatus?.( res.data.message, 'success', 4 );
+							this.loadTable( tableName, group );
+						} else {
+							window.wteDbgSetStatus?.( res.data?.message || 'Truncate failed.', 'error', 4 );
+						}
+					} )
+					.catch( () => {
+						truncateBtn.disabled    = false;
+						truncateBtn.textContent = 'Delete All Rows';
+						window.wteDbgSetStatus?.( 'Request failed.', 'error', 4 );
+					} );
+			} );
+
+			header.appendChild( truncateBtn );
+		}
+
 		builder.appendChild( header );
 
 		// Declare refs up front so getState closure and action section can reference them.
-		let filterRows, resultsWrap;
+		let andFilterRows, orFilterRows, resultsWrap;
 
 		// Lazy state snapshot — called at click-time so forward refs are safe.
 		const getState = () => ( {
-			filters:     this.collectFilters( filterRows ),
+			andFilters:  this.collectFilters( andFilterRows ),
+			orFilters:   this.collectFilters( orFilterRows ),
 			limit:       50,
 			resultsWrap,
 		} );
@@ -250,37 +307,54 @@ export class DbSearchTab {
 		resultsWrap = document.createElement( 'div' );
 		resultsWrap.className = 'wte-dbg-results';
 
-		const addBtn = document.createElement( 'button' );
-		addBtn.type        = 'button';
-		addBtn.className   = 'wte-dbg-add-filter-btn';
-		addBtn.textContent = '+ Add Filter';
-		addBtn.addEventListener( 'click', ( e ) => {
+		const addAndBtn = document.createElement( 'button' );
+		addAndBtn.type        = 'button';
+		addAndBtn.className   = 'wte-dbg-add-filter-btn wte-dbg-add-and-btn';
+		addAndBtn.textContent = '+ AND';
+		addAndBtn.addEventListener( 'click', ( e ) => {
 			e.stopPropagation();
-			this.addFilterRow( filterRows, columns, updateFiltersToggle, () => runBtn.click() );
+			this.addFilterRow( andFilterRows, columns, updateFiltersToggle,
+				() => this.runQuery( tableName, this.collectFilters( andFilterRows ), [], 50, 0, resultsWrap )
+			);
 			filtersSection.classList.add( 'is-open' );
 		} );
-		filtersLabel.appendChild( addBtn );
+		filtersLabel.appendChild( addAndBtn );
 
-		// Separator
-		const filterLabelSep = document.createElement( 'span' );
-		filterLabelSep.className    = 'wte-dbg-action-label-sep';
-		filterLabelSep.style.display = 'none';
-		filtersLabel.appendChild( filterLabelSep );
+		const addOrBtn = document.createElement( 'button' );
+		addOrBtn.type        = 'button';
+		addOrBtn.className   = 'wte-dbg-add-filter-btn wte-dbg-add-or-btn';
+		addOrBtn.textContent = '+ OR';
+		addOrBtn.addEventListener( 'click', ( e ) => {
+			e.stopPropagation();
+			this.addFilterRow( orFilterRows, columns, updateFiltersToggle,
+				() => this.runQuery( tableName, [], this.collectFilters( orFilterRows ), 50, 0, resultsWrap )
+			);
+			filtersSection.classList.add( 'is-open' );
+		} );
+		filtersLabel.appendChild( addOrBtn );
 
-		// Run Query button in the label (hidden until filter rows exist)
+		// Separator before Run Query
+		const runSep = document.createElement( 'span' );
+		runSep.className    = 'wte-dbg-action-label-sep';
+		runSep.style.display = 'none';
+		filtersLabel.appendChild( runSep );
+
+		// Run Query button — runs both AND + OR combined; hidden until any filter exists
 		const runBtn = document.createElement( 'button' );
 		runBtn.type          = 'button';
-		runBtn.className     = 'wte-dbg-run-btn';
+		runBtn.className     = 'wte-dbg-run-btn wte-dbg-run-both-btn';
 		runBtn.textContent   = 'Run Query';
 		runBtn.style.display = 'none';
 		runBtn.addEventListener( 'click', ( e ) => {
 			e.stopPropagation();
-			this.runQuery( tableName, this.collectFilters( filterRows ), 50, 0, resultsWrap );
+			this.runQuery( tableName, this.collectFilters( andFilterRows ), this.collectFilters( orFilterRows ), 50, 0, resultsWrap );
 		} );
 		filtersLabel.appendChild( runBtn );
 
 		filtersLabel.addEventListener( 'click', () => {
-			if ( filterRows.children.length > 0 ) filtersSection.classList.toggle( 'is-open' );
+			if ( andFilterRows.children.length > 0 || orFilterRows.children.length > 0 ) {
+				filtersSection.classList.toggle( 'is-open' );
+			}
 		} );
 		filtersSection.appendChild( filtersLabel );
 
@@ -288,21 +362,94 @@ export class DbSearchTab {
 		const filtersBody = document.createElement( 'div' );
 		filtersBody.className = 'wte-dbg-filters-body';
 
-		filterRows = document.createElement( 'div' );
-		filterRows.className = 'wte-dbg-filter-rows';
-		filtersBody.appendChild( filterRows );
+		// Two-column layout: AND (left) | OR (right)
+		const filterColsWrap = document.createElement( 'div' );
+		filterColsWrap.className = 'wte-dbg-filter-cols-wrap';
+
+		// AND column — hidden until rows are added
+		const andCol = document.createElement( 'div' );
+		andCol.className    = 'wte-dbg-filter-column wte-dbg-filter-column-and';
+		andCol.style.display = 'none';
+
+		const andHdrWrap = document.createElement( 'div' );
+		andHdrWrap.className = 'wte-dbg-filter-col-header-wrap';
+
+		const andHdr = document.createElement( 'div' );
+		andHdr.className   = 'wte-dbg-filter-col-header';
+		andHdr.textContent = 'AND';
+
+		const andClearBtn = document.createElement( 'button' );
+		andClearBtn.type      = 'button';
+		andClearBtn.className = 'wte-dbg-filter-col-clear';
+		andClearBtn.title     = 'Remove all AND filters';
+		andClearBtn.textContent = '\u00d7';
+
+		andHdrWrap.appendChild( andHdr );
+		andHdrWrap.appendChild( andClearBtn );
+		andCol.appendChild( andHdrWrap );
+
+		andFilterRows = document.createElement( 'div' );
+		andFilterRows.className = 'wte-dbg-filter-rows';
+		andCol.appendChild( andFilterRows );
+		filterColsWrap.appendChild( andCol );
+
+		// Vertical divider — hidden until both columns are visible
+		const colSep = document.createElement( 'div' );
+		colSep.className    = 'wte-dbg-filter-col-sep';
+		colSep.style.display = 'none';
+		filterColsWrap.appendChild( colSep );
+
+		// OR column — hidden until rows are added
+		const orCol = document.createElement( 'div' );
+		orCol.className    = 'wte-dbg-filter-column wte-dbg-filter-column-or';
+		orCol.style.display = 'none';
+
+		const orHdrWrap = document.createElement( 'div' );
+		orHdrWrap.className = 'wte-dbg-filter-col-header-wrap';
+
+		const orHdr = document.createElement( 'div' );
+		orHdr.className   = 'wte-dbg-filter-col-header';
+		orHdr.textContent = 'OR';
+
+		const orClearBtn = document.createElement( 'button' );
+		orClearBtn.type      = 'button';
+		orClearBtn.className = 'wte-dbg-filter-col-clear';
+		orClearBtn.title     = 'Remove all OR filters';
+		orClearBtn.textContent = '\u00d7';
+
+		orHdrWrap.appendChild( orHdr );
+		orHdrWrap.appendChild( orClearBtn );
+		orCol.appendChild( orHdrWrap );
+
+		orFilterRows = document.createElement( 'div' );
+		orFilterRows.className = 'wte-dbg-filter-rows';
+		orCol.appendChild( orFilterRows );
+		filterColsWrap.appendChild( orCol );
+
+		filtersBody.appendChild( filterColsWrap );
 
 		filtersSection.appendChild( filtersBody );
 
 		// Enable/disable toggle icon and show/hide Run Query based on whether filter rows exist
 		const updateFiltersToggle = () => {
-			const hasRows = filterRows.children.length > 0;
+			andClearBtn.style.display = andFilterRows.children.length > 0 ? 'inline-flex' : 'none';
+			orClearBtn.style.display  = orFilterRows.children.length  > 0 ? 'inline-flex' : 'none';
+			const hasAndRows = andFilterRows.children.length > 0;
+			const hasOrRows  = orFilterRows.children.length > 0;
+			const hasRows    = hasAndRows || hasOrRows;
 			filtersToggleIcon.classList.toggle( 'is-toggle-disabled', ! hasRows );
-			filterLabelSep.style.display = hasRows ? '' : 'none';
-			runBtn.style.display         = hasRows ? '' : 'none';
+			runSep.style.display = hasRows ? '' : 'none';
+			runBtn.style.display = hasRows ? '' : 'none';
+			andCol.style.display = hasAndRows ? '' : 'none';
+			orCol.style.display  = hasOrRows  ? '' : 'none';
+			colSep.style.display = ( hasAndRows && hasOrRows ) ? '' : 'none';
+			// OR appears first until AND has rows; then AND is left, OR is right.
+			andCol.style.order = hasAndRows ? '0' : '2';
+			colSep.style.order = '1';
+			orCol.style.order  = hasAndRows ? '2' : '0';
 			if ( ! hasRows ) {
 				filtersSection.classList.remove( 'is-open' );
-				this.runQuery( tableName, [], 50, 0, resultsWrap );
+				this.runQuery( tableName, [], [], 50, 0, resultsWrap );
 			}
 		};
 
@@ -316,8 +463,31 @@ export class DbSearchTab {
 		Dom.setTextContent( queryPanel, '' );
 		queryPanel.appendChild( builder );
 
-		// Auto-run on load
-		this.runQuery( tableName, [], 50, 0, resultsWrap );
+		// Restore saved filters or auto-run fresh
+		const restore       = this._pendingRestore;
+		this._pendingRestore = null;
+
+		const onEnterAnd = () => this.runQuery( tableName, this.collectFilters( andFilterRows ), [], 50, 0, resultsWrap );
+		const onEnterOr  = () => this.runQuery( tableName, [], this.collectFilters( orFilterRows ), 50, 0, resultsWrap );
+
+		andClearBtn.addEventListener( 'click', () => {
+			Dom.setTextContent( andFilterRows, '' );
+			updateFiltersToggle();
+		} );
+		orClearBtn.addEventListener( 'click', () => {
+			Dom.setTextContent( orFilterRows, '' );
+			updateFiltersToggle();
+		} );
+
+		if ( restore?.andFilters?.length || restore?.orFilters?.length ) {
+			( restore.andFilters || [] ).forEach( ( f ) => this.addFilterRow( andFilterRows, columns, updateFiltersToggle, onEnterAnd, f ) );
+			( restore.orFilters  || [] ).forEach( ( f ) => this.addFilterRow( orFilterRows,  columns, updateFiltersToggle, onEnterOr,  f ) );
+			filtersSection.classList.add( 'is-open' );
+			updateFiltersToggle();
+			this.runQuery( tableName, restore.andFilters || [], restore.orFilters || [], 50, 0, resultsWrap );
+		} else {
+			this.runQuery( tableName, [], [], 50, 0, resultsWrap );
+		}
 	}
 
 	_buildActionSection( tableName, columns, getState ) {
@@ -409,6 +579,9 @@ export class DbSearchTab {
 			this.wrap.querySelectorAll( 'tr.is-row-selected' ).forEach( ( r ) => r.classList.remove( 'is-row-selected' ) );
 			this._clearRowIndicator();
 			this._expandLeftSidebar();
+			section.closest( '.wte-dbg-query-builder' )
+				?.querySelector( '.wte-dbg-filters-section' )
+				?.classList.add( 'is-open' );
 		} );
 		label.appendChild( dismissBtn );
 
@@ -561,7 +734,7 @@ export class DbSearchTab {
 			}
 		}
 
-		const { filters, limit, resultsWrap } = getState();
+		const { andFilters, orFilters, limit, resultsWrap } = getState();
 
 		const origText = executeBtn.textContent;
 		executeBtn.disabled    = true;
@@ -595,7 +768,10 @@ export class DbSearchTab {
 			.then( ( res ) => {
 				if ( res.success ) {
 					window.wteDbgSetStatus?.( res.data.message, 'success', 2 );
-					this.runQuery( tableName, filters, limit, 0, resultsWrap );
+					if ( 'delete' === type || 'add' === type ) {
+						this._expandLeftSidebar();
+					}
+					this.runQuery( tableName, andFilters, orFilters, limit, 0, resultsWrap );
 				} else {
 					window.wteDbgSetStatus?.( res.data?.message || 'Action failed.', 'error', 3 );
 				}
@@ -613,7 +789,28 @@ export class DbSearchTab {
 			} );
 	}
 
-	addFilterRow( container, columns, onCountChange = null, onEnter = null ) {
+	/**
+	 * Wrap a <select> in a pill div so the native browser picker button is never
+	 * visible — same pattern as .wte-dbg-status-select-wrap.
+	 */
+	_wrapSelect( sel, wrapClass ) {
+		const wrap = document.createElement( 'div' );
+		wrap.className = wrapClass;
+
+		const display = document.createElement( 'span' );
+		display.className   = 'wte-dbg-filter-sel-display';
+		display.textContent = sel.options[ sel.selectedIndex ]?.text || '';
+
+		sel.addEventListener( 'change', () => {
+			display.textContent = sel.options[ sel.selectedIndex ]?.text || '';
+		} );
+
+		wrap.appendChild( display );
+		wrap.appendChild( sel );
+		return wrap;
+	}
+
+	addFilterRow( container, columns, onCountChange = null, onEnter = null, initialValues = null ) {
 		const row = document.createElement( 'div' );
 		row.className = 'wte-dbg-filter-row';
 
@@ -657,11 +854,31 @@ export class DbSearchTab {
 			onCountChange?.();
 		} );
 
+		const fieldsGroup = document.createElement( 'div' );
+		fieldsGroup.className = 'wte-dbg-filter-fields';
+		fieldsGroup.appendChild( this._wrapSelect( colSel, 'wte-dbg-filter-col-wrap' ) );
+		fieldsGroup.appendChild( this._wrapSelect( opSel,  'wte-dbg-filter-op-wrap' ) );
+		fieldsGroup.appendChild( valInput );
+
 		row.appendChild( removeBtn );
-		row.appendChild( colSel );
-		row.appendChild( opSel );
-		row.appendChild( valInput );
+		row.appendChild( fieldsGroup );
 		container.appendChild( row );
+
+		// Restore saved values — dispatch change so display spans and visibility sync.
+		if ( initialValues ) {
+			if ( initialValues.column && [ ...colSel.options ].some( ( o ) => o.value === initialValues.column ) ) {
+				colSel.value = initialValues.column;
+				colSel.dispatchEvent( new Event( 'change' ) );
+			}
+			if ( initialValues.operator ) {
+				opSel.value = initialValues.operator;
+				opSel.dispatchEvent( new Event( 'change' ) );
+			}
+			if ( initialValues.value ) {
+				valInput.value = initialValues.value;
+			}
+		}
+
 		onCountChange?.();
 	}
 
@@ -678,7 +895,8 @@ export class DbSearchTab {
 		return filters;
 	}
 
-	runQuery( tableName, filters, limit, offset, resultsWrap ) {
+	runQuery( tableName, andFilters, orFilters, limit, offset, resultsWrap ) {
+		this._saveQueryState( tableName, andFilters, orFilters );
 		this._selectedRow = null;
 		this._clearRowIndicator();
 
@@ -696,10 +914,15 @@ export class DbSearchTab {
 			_ajax_nonce: this.nonce,
 		} );
 
-		filters.forEach( ( f, i ) => {
+		andFilters.forEach( ( f, i ) => {
 			params.append( 'filters[' + i + '][column]',   f.column );
 			params.append( 'filters[' + i + '][operator]', f.operator );
 			params.append( 'filters[' + i + '][value]',    f.value );
+		} );
+		orFilters.forEach( ( f, i ) => {
+			params.append( 'or_filters[' + i + '][column]',   f.column );
+			params.append( 'or_filters[' + i + '][operator]', f.operator );
+			params.append( 'or_filters[' + i + '][value]',    f.value );
 		} );
 
 		fetch( this.ajaxurl + '?' + params, { signal: DbSearchTab._runQueryCtrl.signal } )
@@ -711,7 +934,7 @@ export class DbSearchTab {
 					resultsWrap.appendChild( Dom.makePara( 'wte-dbg-empty', 'Query error.' ) );
 					return;
 				}
-				this.renderResults( res.data, tableName, filters, limit, resultsWrap );
+				this.renderResults( res.data, tableName, andFilters, orFilters, limit, resultsWrap );
 			} )
 			.catch( ( e ) => {
 				if ( e.name === 'AbortError' ) {
@@ -724,10 +947,16 @@ export class DbSearchTab {
 			} );
 	}
 
-	renderResults( data, tableName, filters, limit, resultsWrap ) {
+	renderResults( data, tableName, andFilters, orFilters, limit, resultsWrap ) {
 		const rows   = data.rows;
 		const total  = data.total;
 		const offset = data.offset;
+
+		// Refresh sidebar row count when no filters are active.
+		if ( andFilters.length === 0 && orFilters.length === 0 ) {
+			const countEl = this.wrap.querySelector( '.wte-dbg-table-item[data-table="' + CSS.escape( tableName ) + '"] .wte-dbg-table-rows' );
+			if ( countEl ) countEl.textContent = total.toLocaleString();
+		}
 
 		const summary = document.createElement( 'div' );
 		summary.className = 'wte-dbg-results-summary';
@@ -737,12 +966,7 @@ export class DbSearchTab {
 		summary.textContent = total.toLocaleString() + ' row' + ( total !== 1 ? 's' : '' ) + showing;
 		resultsWrap.appendChild( summary );
 
-		if ( ! rows.length ) {
-			resultsWrap.appendChild( Dom.makePara( 'wte-dbg-empty', 'No rows found.' ) );
-			return;
-		}
-
-		const cols = Object.keys( rows[ 0 ] );
+		const cols = rows.length ? Object.keys( rows[ 0 ] ) : ( data.columns || [] );
 
 		const tableWrap = document.createElement( 'div' );
 		tableWrap.className = 'wte-dbg-table-wrap';
@@ -771,6 +995,15 @@ export class DbSearchTab {
 		table.appendChild( thead );
 
 		const tbody = document.createElement( 'tbody' );
+		if ( ! rows.length ) {
+			const emptyTr = document.createElement( 'tr' );
+			const emptyTd = document.createElement( 'td' );
+			emptyTd.colSpan   = cols.length + 1; // +1 for the radio column
+			emptyTd.className = 'wte-dbg-empty wte-dbg-empty-row';
+			emptyTd.textContent = 'No rows found.';
+			emptyTr.appendChild( emptyTd );
+			tbody.appendChild( emptyTr );
+		}
 		rows.forEach( ( row ) => {
 			const tr = document.createElement( 'tr' );
 
@@ -785,6 +1018,9 @@ export class DbSearchTab {
 				tbody.querySelectorAll( 'tr.is-row-selected' ).forEach( ( r ) => r.classList.remove( 'is-row-selected' ) );
 				tr.classList.add( 'is-row-selected' );
 				this._selectRow( cols[ 0 ], row[ cols[ 0 ] ], row );
+				resultsWrap.closest( '.wte-dbg-query-builder' )
+					?.querySelector( '.wte-dbg-filters-section' )
+					?.classList.remove( 'is-open' );
 			} );
 			radioTd.appendChild( radio );
 			tr.appendChild( radioTd );
@@ -797,6 +1033,7 @@ export class DbSearchTab {
 				if ( val === null ) td.classList.add( 'is-null' );
 
 				td.addEventListener( 'click', () => this._copyCell( td, val ) );
+				DomHelper.attachCopyLabel( td );
 
 				tr.appendChild( td );
 			} );
@@ -814,7 +1051,7 @@ export class DbSearchTab {
 				paginEl,
 				Math.floor( offset / limit ) + 1,
 				Math.ceil( total / limit ),
-				( page ) => this.runQuery( tableName, filters, limit, ( page - 1 ) * limit, resultsWrap )
+				( page ) => this.runQuery( tableName, andFilters, orFilters, limit, ( page - 1 ) * limit, resultsWrap )
 			);
 			summary.appendChild( paginEl );
 		}
@@ -950,32 +1187,27 @@ export class DbSearchTab {
 		}
 	}
 
-	_copyCell( td, val ) {
-		if ( td.classList.contains( 'is-copied' ) ) return;
-		const copyText = val === null ? '' : String( val );
-		const prev     = td.textContent;
+	_saveQueryState( tableName, andFilters, orFilters ) {
+		try {
+			sessionStorage.setItem( 'wte_dbg_query_table',       tableName );
+			sessionStorage.setItem( 'wte_dbg_query_and_filters', JSON.stringify( andFilters ) );
+			sessionStorage.setItem( 'wte_dbg_query_or_filters',  JSON.stringify( orFilters ) );
+		} catch ( e ) {}
+	}
 
-		const showFeedback = () => {
-			td.classList.add( 'is-copied' );
-			td.textContent = 'Copied!';
-			setTimeout( () => {
-				td.classList.remove( 'is-copied' );
-				td.textContent = prev;
-			}, 1000 );
-		};
-
-		if ( navigator.clipboard && navigator.clipboard.writeText ) {
-			navigator.clipboard.writeText( copyText ).then( showFeedback );
-		} else {
-			// Fallback for HTTP / older browsers
-			const ta = document.createElement( 'textarea' );
-			ta.value = copyText;
-			ta.style.cssText = 'position:fixed;opacity:0;';
-			document.body.appendChild( ta );
-			ta.select();
-			document.execCommand( 'copy' );
-			document.body.removeChild( ta );
-			showFeedback();
+	_loadQueryState() {
+		try {
+			return {
+				table:      sessionStorage.getItem( 'wte_dbg_query_table' ) || null,
+				andFilters: JSON.parse( sessionStorage.getItem( 'wte_dbg_query_and_filters' ) || '[]' ),
+				orFilters:  JSON.parse( sessionStorage.getItem( 'wte_dbg_query_or_filters' )  || '[]' ),
+			};
+		} catch ( e ) {
+			return { table: null, andFilters: [], orFilters: [] };
 		}
+	}
+
+	_copyCell( td, val ) {
+		DomHelper.copyWithFeedback( td, val );
 	}
 }

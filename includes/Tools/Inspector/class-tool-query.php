@@ -1,8 +1,9 @@
 <?php
 
-namespace WPTravelEngineDevZone\Tools;
+namespace WPTravelEngineDevZone\Tools\Inspector;
 
 use WPTravelEngineDevZone\Admin;
+use WPTravelEngineDevZone\Tools\AbstractTool;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,10 +15,11 @@ class ToolQuery extends AbstractTool {
 
 	public function register_ajax(): void {
 		$actions = [
-			'wpte_devzone_db_tables'  => 'db_tables',
-			'wpte_devzone_db_columns' => 'db_columns',
-			'wpte_devzone_db_query'   => 'db_query',
-			'wpte_devzone_db_action'  => 'db_action',
+			'wpte_devzone_db_tables'   => 'db_tables',
+			'wpte_devzone_db_columns'  => 'db_columns',
+			'wpte_devzone_db_query'    => 'db_query',
+			'wpte_devzone_db_action'   => 'db_action',
+			'wpte_devzone_db_truncate' => 'db_truncate',
 		];
 		foreach ( $actions as $action => $method ) {
 			add_action( "wp_ajax_{$action}", [ $this, $method ] );
@@ -27,13 +29,13 @@ class ToolQuery extends AbstractTool {
 	public function enqueue_assets(): void {
 		wp_enqueue_style(
 			'wpte-devzone-search',
-			WPTE_DEVZONE_URL . 'assets/css/db-search.css',
+			WPTE_DEVZONE_URL . 'assets/css/query.css',
 			[ 'wpte-devzone' ],
 			WPTE_DEVZONE_VERSION
 		);
 		wp_enqueue_script(
 			'wpte-devzone-search',
-			WPTE_DEVZONE_URL . 'assets/js/db-search.js',
+			WPTE_DEVZONE_URL . 'assets/js/tabs/query.js',
 			[ 'wpte-devzone' ],
 			WPTE_DEVZONE_VERSION,
 			true
@@ -98,10 +100,11 @@ class ToolQuery extends AbstractTool {
 
 		global $wpdb;
 
-		$table   = sanitize_text_field( wp_unslash( $_GET['table'] ?? '' ) );
-		$filters = (array) ( $_GET['filters'] ?? [] );
-		$limit   = min( 200, max( 1, intval( $_GET['limit'] ?? 50 ) ) );
-		$offset  = max( 0, intval( $_GET['offset'] ?? 0 ) );
+		$table      = sanitize_text_field( wp_unslash( $_GET['table'] ?? '' ) );
+		$filters    = (array) ( $_GET['filters'] ?? [] );
+		$or_filters = (array) ( $_GET['or_filters'] ?? [] );
+		$limit      = min( 200, max( 1, intval( $_GET['limit'] ?? 50 ) ) );
+		$offset     = max( 0, intval( $_GET['offset'] ?? 0 ) );
 
 		// Validate table name against actual tables.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -114,8 +117,18 @@ class ToolQuery extends AbstractTool {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$valid_columns = $wpdb->get_col( "SHOW COLUMNS FROM `{$table}`" );
 
-		$where_parts = $this->_build_where_parts( $filters, $valid_columns );
-		$where       = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+		$and_parts = $this->_build_where_parts( $filters, $valid_columns );
+		$or_parts  = $this->_build_where_parts( $or_filters, $valid_columns );
+
+		if ( $and_parts && $or_parts ) {
+			$where = 'WHERE (' . implode( ' AND ', $and_parts ) . ') OR (' . implode( ' OR ', $or_parts ) . ')';
+		} elseif ( $and_parts ) {
+			$where = 'WHERE ' . implode( ' AND ', $and_parts );
+		} elseif ( $or_parts ) {
+			$where = 'WHERE ' . implode( ' OR ', $or_parts );
+		} else {
+			$where = '';
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}` {$where}" );
@@ -123,10 +136,11 @@ class ToolQuery extends AbstractTool {
 		$rows  = $wpdb->get_results( "SELECT * FROM `{$table}` {$where} LIMIT {$limit} OFFSET {$offset}", ARRAY_A );
 
 		wp_send_json_success( [
-			'rows'   => $rows,
-			'total'  => $total,
-			'limit'  => $limit,
-			'offset' => $offset,
+			'rows'    => $rows,
+			'total'   => $total,
+			'limit'   => $limit,
+			'offset'  => $offset,
+			'columns' => $valid_columns,
 		] );
 	}
 
@@ -266,6 +280,46 @@ class ToolQuery extends AbstractTool {
 		}
 
 		wp_send_json_success( [ 'message' => $result . ' row(s) deleted' ] );
+	}
+
+	public function db_truncate(): void {
+		Admin::verify_request();
+
+		global $wpdb;
+
+		$table = sanitize_text_field( wp_unslash( $_POST['table'] ?? '' ) );
+
+		if ( empty( $table ) ) {
+			wp_send_json_error( [ 'message' => __( 'Table name is required.', 'wptravelengine-devzone' ) ] );
+		}
+
+		// Only allow truncating WTE tables — never WP core or unrelated tables.
+		$wp_core_tables = array_values( $wpdb->tables( 'all', true ) );
+		if ( 'wte' !== $this->classify_table( $table, $wp_core_tables ) ) {
+			wp_send_json_error( [ 'message' => __( 'Only WP Travel Engine tables can be truncated.', 'wptravelengine-devzone' ) ] );
+		}
+
+		// Confirm the table actually exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$tables = $wpdb->get_col( 'SHOW TABLES' );
+		if ( ! in_array( $table, $tables, true ) ) {
+			wp_send_json_error( [ 'message' => __( 'Table not found.', 'wptravelengine-devzone' ) ] );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$result = $wpdb->query( "TRUNCATE TABLE `{$table}`" );
+
+		if ( false === $result ) {
+			wp_send_json_error( [ 'message' => 'Truncate failed: ' . $wpdb->last_error ] );
+		}
+
+		wp_send_json_success( [
+			'message' => sprintf(
+				/* translators: %s: table name */
+				__( 'All rows deleted from %s.', 'wptravelengine-devzone' ),
+				$table
+			),
+		] );
 	}
 
 	/**

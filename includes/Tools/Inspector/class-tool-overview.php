@@ -1,9 +1,10 @@
 <?php
 
-namespace WPTravelEngineDevZone\Tools;
+namespace WPTravelEngineDevZone\Tools\Inspector;
 
 use WPTravelEngineDevZone\Admin;
 use WPTravelEngineDevZone\Renderer;
+use WPTravelEngineDevZone\Tools\AbstractTool;
 use WPTravelEngineDevZone\Traits\ValueHelperTrait;
 use WPTravelEngine\Utilities\ArrayUtility;
 

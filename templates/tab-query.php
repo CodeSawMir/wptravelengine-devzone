@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 		</div>
 		<div class="wte-dbg-db-tables-search-wrap">
 			<input type="text"
-				class="wte-dbg-db-tables-filter"
+				class="wte-dbg-db-tables-filter wte-dbg-search-input"
 				placeholder="<?php esc_attr_e( 'Filter tables…', 'wptravelengine-devzone' ); ?>">
 		</div>
 		<div class="wte-dbg-db-tables-list">

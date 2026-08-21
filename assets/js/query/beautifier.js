@@ -1,4 +1,6 @@
+import { DomHelper }  from '../dom-helper.js';
 import { UnserTree } from './unser-tree.js';
+import { Icons }     from '../constants.js';
 
 export class Beautifier {
 	// Cross-visit state — persists across tab switches, cleared only on page reload.
@@ -58,7 +60,7 @@ export class Beautifier {
 		try {
 			if (localStorage.getItem(UNSER_KEY) === '1') {
 				wrap.classList.add('unser-collapsed');
-				if (toggleBtn) toggleBtn.textContent = '\u2039'; // ‹
+				if (toggleBtn) toggleBtn.textContent = Icons.PREV;
 			}
 		} catch (e) { }
 
@@ -70,14 +72,14 @@ export class Beautifier {
 					sidebar.addEventListener('animationend', () => {
 						wrap.classList.remove('unser-maximized', 'unser-restoring');
 						if (this.maximizeBtn) {
-							this.maximizeBtn.textContent = '\u2922'; // ⤢
+							this.maximizeBtn.textContent = Icons.MAXIMIZE;
 							this.maximizeBtn.title = 'Maximize';
 						}
 					}, { once: true });
 					return;
 				}
 				const collapsed = wrap.classList.toggle('unser-collapsed');
-				toggleBtn.textContent = collapsed ? '\u2039' : '\u203a'; // ‹ / ›
+				toggleBtn.textContent = collapsed ? Icons.PREV : Icons.NEXT;
 				// Save/restore inline width so CSS collapse rule can take effect.
 				if (collapsed) {
 					sidebar.dataset.savedWidth = sidebar.style.width;
@@ -145,17 +147,17 @@ export class Beautifier {
 					wrap.classList.add('unser-restoring');
 					sidebar.addEventListener('animationend', () => {
 						wrap.classList.remove('unser-maximized', 'unser-restoring');
-						this.maximizeBtn.textContent = '\u2922'; // ⤢
+						this.maximizeBtn.textContent = Icons.MAXIMIZE;
 						this.maximizeBtn.title = 'Maximize';
 					}, { once: true });
 				} else {
 					// Expand — ensure not collapsed first.
 					if (wrap.classList.contains('unser-collapsed')) {
 						wrap.classList.remove('unser-collapsed');
-						if (toggleBtn) toggleBtn.textContent = '\u203a'; // ›
+						if (toggleBtn) toggleBtn.textContent = Icons.NEXT;
 					}
 					wrap.classList.add('unser-maximized');
-					this.maximizeBtn.textContent = '\u2921'; // ⤡ (compress arrows)
+					this.maximizeBtn.textContent = Icons.RESTORE;
 					this.maximizeBtn.title = 'Restore';
 				}
 			});
@@ -183,8 +185,8 @@ export class Beautifier {
 			Beautifier._unserCtrl = new AbortController();
 
 			setButtonsDisabled(true);
-			window.wteDbgSetStatus?.('Processing\u2026', 'info');
-			outputEl.textContent = 'Processing\u2026';
+			window.wteDbgSetStatus?.(`Processing${ Icons.ELLIPSIS }`, 'info');
+			outputEl.textContent = `Processing${ Icons.ELLIPSIS }`;
 
 			const body = new URLSearchParams({
 				action: 'wpte_devzone_unserialize',
@@ -200,7 +202,7 @@ export class Beautifier {
 				})
 				.catch((e) => {
 					if (e.name === 'AbortError') {
-						window.wteDbgSetStatus?.('Cancelled \u2014 unserialize', 'cancelled');
+						window.wteDbgSetStatus?.(`Cancelled ${ Icons.EM_DASH } unserialize`, 'cancelled');
 						return;
 					}
 					window.wteDbgSetStatus?.('Request failed.', 'error', 3);
@@ -220,8 +222,8 @@ export class Beautifier {
 				Beautifier._varDumpCtrl = new AbortController();
 
 				setButtonsDisabled(true);
-				window.wteDbgSetStatus?.('Processing\u2026', 'info');
-				outputEl.textContent = 'Processing\u2026';
+				window.wteDbgSetStatus?.(`Processing${ Icons.ELLIPSIS }`, 'info');
+				outputEl.textContent = `Processing${ Icons.ELLIPSIS }`;
 
 				const body = new URLSearchParams({
 					action: 'wpte_devzone_var_dump',
@@ -237,7 +239,7 @@ export class Beautifier {
 					})
 					.catch((e) => {
 						if (e.name === 'AbortError') {
-							window.wteDbgSetStatus?.('Cancelled \u2014 var_dump', 'cancelled');
+							window.wteDbgSetStatus?.(`Cancelled ${ Icons.EM_DASH } var_dump`, 'cancelled');
 							return;
 						}
 						window.wteDbgSetStatus?.('Request failed.', 'error', 3);
@@ -256,12 +258,6 @@ export class Beautifier {
 		if (res.success) {
 			const { tree, format } = res.data;
 			if (format === 'unknown') {
-				if (Beautifier.BADGE_LABELS[format]) {
-					const lbl = document.createElement('div');
-					lbl.className = 'wte-dbg-count wte-dbg-unser-format-badge';
-					lbl.textContent = Beautifier.BADGE_LABELS[format];
-					outputEl.appendChild(lbl);
-				}
 				this._renderFallback(outputEl, tree);
 			} else {
 				const treeEl = UnserTree.build(tree);
@@ -277,26 +273,23 @@ export class Beautifier {
 
 				const expandAll = document.createElement('span');
 				expandAll.className = 'wte-dbg-count wte-dbg-unser-format-badge wte-dbg-expand-all';
-				expandAll.textContent = '\u229e'; // ⊞
+				expandAll.textContent = Icons.EXPAND_ALL;
 				expandAll.title = 'Expand all';
 				expandAll.addEventListener('click', () => {
 					const expanding = expandAll.dataset.state !== 'expanded';
 					expandAll.dataset.state = expanding ? 'expanded' : '';
-					expandAll.textContent = expanding ? '\u229f' : '\u229e'; // ⊟ : ⊞
+					expandAll.textContent = expanding ? Icons.COLLAPSE_ALL : Icons.EXPAND_ALL;
 					expandAll.title = expanding ? 'Collapse all' : 'Expand all';
 					treeEl.querySelectorAll('.wte-dbg-node').forEach(el => {
 						el.open = expanding;
 					});
 					treeEl.querySelectorAll('.wte-dbg-value').forEach(el => {
-						const raw = el.dataset.raw ?? '';
-						if (raw.length <= 120) return;
-						el.dataset.expanded = expanding ? '1' : '0';
-						el.textContent = expanding ? raw : raw.substring(0, 120) + '\u2026';
-						el.title = expanding ? 'Click to collapse' : 'Click to expand';
+						DomHelper.toggleValueExpand( el, expanding, 120 );
 					});
 				});
 				badgeRow.insertBefore(expandAll, badgeRow.firstChild);
 
+				DomHelper.setupValueClicks( treeEl, 120 );
 				outputEl.appendChild(badgeRow);
 				outputEl.appendChild(treeEl);
 			}
@@ -308,7 +301,7 @@ export class Beautifier {
 	_renderFallback(container, raw) {
 		const notice = document.createElement('div');
 		notice.className = 'wte-dbg-unser-unknown-notice';
-		notice.textContent = 'Unknown format \u2014 showing raw input.';
+		notice.textContent = `Unknown format ${ Icons.EM_DASH } showing raw input.`;
 
 		const pre = document.createElement('pre');
 		pre.className = 'wte-dbg-unser-pre';

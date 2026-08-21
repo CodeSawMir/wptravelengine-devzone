@@ -1,13 +1,7 @@
-/**
- * WPTE Dev Zone — DB Search tab JS entry point.
- * Handles: table list, query builder, results, and the Unserializer sidebar.
- *
- * Loaded only on ?tab=query (conditionally enqueued by ToolQuery::enqueue_assets()).
- * Depends on the core `wpte-devzone` script for the `wpteDbg` global.
- */
+/** Query tab — conditionally enqueued by ToolQuery::enqueue_assets(). */
 /* global wpteDbg */
 
-import { DbSearchTab } from './db-search/db-search-tab.js';
+import { DbSearchTab } from '../query/db-search-tab.js';
 
 const { ajaxurl, nonce } = wpteDbg;
 

@@ -44,6 +44,7 @@ class SharedAjax {
 			'wpte_devzone_get_post'        => 'get_post',
 			'wpte_devzone_save_meta'       => 'save_meta',
 			'wpte_devzone_save_post_field' => 'save_post_field',
+			'wpte_devzone_get_relations'   => 'get_relations',
 		];
 		foreach ( $actions as $action => $method ) {
 			add_action( "wp_ajax_{$action}", [ $this, $method ] );
@@ -81,45 +82,19 @@ class SharedAjax {
 	public function list_posts(): void {
 		Admin::verify_request();
 
-		$allowed_types = array_map(
-			fn( $t ) => $t->get_post_type(),
-			array_filter( $this->tools, fn( $t ) => $t instanceof AbstractPostTool )
-		);
-
 		$post_type = sanitize_key( $_GET['post_type'] ?? '' );
+		$tool      = $this->find_post_tool_by_type( $post_type );
 
-		if ( ! in_array( $post_type, $allowed_types, true ) ) {
+		if ( ! $tool ) {
 			wp_send_json_error( [ 'message' => 'Invalid post type' ] );
 		}
 
-		$search = sanitize_text_field( wp_unslash( $_GET['search'] ?? '' ) );
-		$page   = max( 1, intval( $_GET['paged'] ?? 1 ) );
+		$search         = sanitize_text_field( wp_unslash( $_GET['search'] ?? '' ) );
+		$page           = max( 1, intval( $_GET['paged'] ?? 1 ) );
+		$pinned_ids_raw = sanitize_text_field( wp_unslash( $_GET['pinned_ids'] ?? '' ) );
+		$pinned_ids     = array_values( array_filter( array_map( 'intval', explode( ',', $pinned_ids_raw ) ) ) );
 
-		$query = new \WP_Query( [
-			'post_type'      => $post_type,
-			'post_status'    => array_keys( get_post_stati() ),
-			'posts_per_page' => 30,
-			'paged'          => $page,
-			's'              => $search,
-			'orderby'        => 'ID',
-			'order'          => 'DESC',
-		] );
-
-		$posts = array_map( function ( \WP_Post $p ) {
-			return [
-				'id'     => $p->ID,
-				'title'  => $p->post_title ?: "#$p->ID",
-				'status' => $p->post_status,
-				'date'   => $p->post_date,
-			];
-		}, $query->posts );
-
-		wp_send_json_success( [
-			'posts'       => $posts,
-			'total'       => $query->found_posts,
-			'total_pages' => $query->max_num_pages,
-			'page'        => $page,
-		] );
+		wp_send_json_success( $tool->get_posts( $search, $page, $pinned_ids ) );
 	}
 
 	public function get_post(): void {
@@ -135,7 +110,7 @@ class SharedAjax {
 		$raw_meta = get_post_meta( $post_id );
 		$meta     = [];
 		foreach ( $raw_meta as $key => $values ) {
-			$meta[ $key ] = get_post_meta( $post_id, $key, true );
+			$meta[ $key ] = maybe_unserialize( $values[0] ?? null );
 		}
 
 		$taxonomies = get_object_taxonomies( $post->post_type );
@@ -225,9 +200,40 @@ class SharedAjax {
 		wp_send_json_success( [ 'saved' => true ] );
 	}
 
+	public function get_relations(): void {
+		Admin::verify_request();
+
+		$post_id   = intval( $_GET['post_id'] ?? 0 );
+		$post_type = sanitize_key( $_GET['post_type'] ?? '' );
+		$group     = sanitize_key( $_GET['group'] ?? '' );
+		$page      = max( 1, intval( $_GET['page'] ?? 1 ) );
+		$post      = get_post( $post_id );
+
+		if ( ! $post || ! $post_id ) {
+			wp_send_json_error( [ 'message' => 'Post not found' ] );
+		}
+
+		$tool = $this->find_post_tool_by_type( $post_type );
+
+		if ( ! $tool ) {
+			wp_send_json_error( [ 'message' => 'Invalid post type' ] );
+		}
+
+		wp_send_json_success( [ 'relations' => $tool->get_relations( $post_id, $group, $page ) ] );
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	private function find_post_tool_by_type( string $post_type ): ?AbstractPostTool {
+		foreach ( $this->tools as $tool ) {
+			if ( $tool instanceof AbstractPostTool && $tool->get_post_type() === $post_type ) {
+				return $tool;
+			}
+		}
+		return null;
+	}
 
 	private function is_meta_key_writable( string $key ): bool {
 		if ( in_array( $key, self::BLOCKED_META_KEYS, true ) ) {

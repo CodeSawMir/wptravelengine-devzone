@@ -31,7 +31,7 @@ export class Dom {
 
 		const prev = document.createElement( 'button' );
 		prev.className = 'wte-dbg-page-btn';
-		prev.textContent = '\u00ab Prev';
+		prev.textContent = '\u2039';
 		prev.dataset.page = page - 1;
 		if ( page <= 1 ) prev.disabled = true;
 
@@ -41,7 +41,7 @@ export class Dom {
 
 		const next = document.createElement( 'button' );
 		next.className = 'wte-dbg-page-btn';
-		next.textContent = 'Next \u00bb';
+		next.textContent = '\u203a';
 		next.dataset.page = page + 1;
 		if ( page >= totalPages ) next.disabled = true;
 

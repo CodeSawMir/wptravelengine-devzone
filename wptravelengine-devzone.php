@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: WP Travel Engine - Dev Zone
+ * Plugin Name: WPTE DevZone
  * Plugin URI:  https://github.com/CodeSawMir
  * Description: Visual database inspector for WP Travel Engine — diagnose and fix data issues directly in WP Admin.
- * Version:     1.1.0
+ * Version:     1.2.0
  * Author:      Samir Shrestha
  * Text Domain: wptravelengine-devzone
  * Requires WP: 6.9
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WPTE_DEVZONE_VERSION', '1.1.0' );
+define( 'WPTE_DEVZONE_VERSION', '1.2.0' );
 define( 'WPTE_DEVZONE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPTE_DEVZONE_URL', plugin_dir_url( __FILE__ ) );
 
@@ -23,6 +23,8 @@ register_activation_hook( __FILE__, function () {
 require_once WPTE_DEVZONE_DIR . 'includes/class-plugin.php';
 \WPTravelEngineDevZone\Plugin::register_autoloader();
 
+// Priority 20: addon plugins hook wpte_devzone_tools at default priority 10,
+// so they must register before we boot and apply that filter.
 add_action( 'plugins_loaded', function () {
 	// Only boot in the admin context (includes admin-ajax.php for AJAX handlers).
 	if ( ! is_admin() ) {
@@ -42,4 +44,4 @@ add_action( 'plugins_loaded', function () {
 	}
 
 	\WPTravelEngineDevZone\Plugin::instance();
-} );
+}, 20 );
