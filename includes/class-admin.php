@@ -401,6 +401,7 @@ class Admin {
 			'groupSubtabs' => $group_subtabs,
 			'wteActive'    => Plugin::is_wte_active(),
 			'selfVersion'  => WPTE_DEVZONE_VERSION,
+			'selfRepo'     => Tools\Marketplace\ToolMarketplace::get_self_repo(),
 		] );
 
 		// Let each tool enqueue its own assets (e.g. ToolQuery loads tabs/query.js).

@@ -460,6 +460,15 @@
 	text-overflow: ellipsis;
 }
 
+.wte-dbg-marketplace-card-name a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.wte-dbg-marketplace-card-name a:hover {
+	text-decoration: underline;
+}
+
 .wte-dbg-marketplace-card-author-wrap {
 	display: flex;
 	align-items: center;

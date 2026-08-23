@@ -394,7 +394,7 @@ class ToolMarketplace extends AbstractTool {
 			'current'          => WPTE_DEVZONE_VERSION,
 			'latest'           => $latest,
 			'update_available' => version_compare( $latest, WPTE_DEVZONE_VERSION, '>' ),
-			'repo'             => $this->get_self_repo(),
+			'repo'             => self::get_self_repo(),
 		] );
 	}
 
@@ -411,7 +411,7 @@ class ToolMarketplace extends AbstractTool {
 
 		$client  = $this->get_github_client();
 		$zip_url = $client->resolve_zip_redirect(
-			GithubClient::API_BASE . '/repos/' . $this->get_self_repo() . '/zipball/main'
+			GithubClient::API_BASE . '/repos/' . self::get_self_repo() . '/zipball/main'
 		);
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -448,7 +448,7 @@ class ToolMarketplace extends AbstractTool {
 	}
 
 	/** GitHub repo slug ('owner/repo') this plugin updates itself from. */
-	private function get_self_repo(): string {
+	public static function get_self_repo(): string {
 		return apply_filters( 'wpte_devzone_self_update_repo', 'CodeSawMir/wptravelengine-devzone-plugin' );
 	}
 
@@ -460,7 +460,7 @@ class ToolMarketplace extends AbstractTool {
 	 */
 	private function fetch_self_remote_version() {
 		$client = $this->get_github_client();
-		$url    = GithubClient::API_BASE . '/repos/' . $this->get_self_repo() . '/contents/wptravelengine-devzone.php?ref=main';
+		$url    = GithubClient::API_BASE . '/repos/' . self::get_self_repo() . '/contents/wptravelengine-devzone.php?ref=main';
 
 		$result = $client->get( $url );
 		if ( is_wp_error( $result ) ) {
