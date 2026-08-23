@@ -13,7 +13,9 @@ use WPTravelEngineDevZone\Tools\Tinker\ToolTinker;
 $snippets   = ToolTinker::get_snippets();
 $is_enabled = ToolTinker::is_enabled();
 
-$boilerplate = "\$settings = wptravelengine_settings();\n\nreturn \$settings;\n";
+$boilerplate = \WPTravelEngineDevZone\Plugin::is_wte_active()
+	? "\$settings = wptravelengine_settings();\n\nreturn \$settings;\n"
+	: "return get_bloginfo( 'version' );\n";
 ?>
 <div class="wte-dbg-tinker-tab" data-enabled="<?php echo $is_enabled ? '1' : '0'; ?>">
 

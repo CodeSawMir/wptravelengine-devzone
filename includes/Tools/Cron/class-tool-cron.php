@@ -41,12 +41,16 @@ class ToolCron extends AbstractTool {
 	 * Add new hooks via the 'wpte_devzone_cron_schedule_registry' filter.
 	 */
 	protected function get_schedule_registry(): array {
-		return apply_filters( 'wpte_devzone_cron_schedule_registry', [
-			'wptravelengine_check_events' => [
+		$registry = [];
+
+		if ( \WPTravelEngineDevZone\Plugin::is_wte_active() ) {
+			$registry['wptravelengine_check_events'] = [
 				'callable' => [ \WPTravelEngine\Filters\Events::class, 'schedule' ],
 				'label'    => __( 'Schedule', 'wptravelengine-devzone' ),
-			],
-		] );
+			];
+		}
+
+		return apply_filters( 'wpte_devzone_cron_schedule_registry', $registry );
 	}
 
 	// -------------------------------------------------------------------------

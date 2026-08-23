@@ -67,7 +67,9 @@ class ToolQuery extends AbstractTool {
 			];
 		}
 
-		// Sort: WTE tables first, then WP core, then everything else; alpha within each group.
+		// Sort: WTE tables first (only ever tagged when WTE is active — see
+		// classify_table()), then WP core, then everything else; alpha within
+		// each group.
 		$order = [ 'wte' => 0, 'wp' => 1, 'other' => 2 ];
 		usort( $result, function ( $a, $b ) use ( $order ) {
 			$diff = ( $order[ $a['group'] ] ?? 2 ) - ( $order[ $b['group'] ] ?? 2 );
@@ -414,10 +416,16 @@ class ToolQuery extends AbstractTool {
 	 * @param string[] $wp_core_tables List of WP core table names from $wpdb->tables().
 	 */
 	private function classify_table( string $table, array $wp_core_tables ): string {
+		// Only tag a table 'wte' when WP Travel Engine is actually active —
+		// otherwise it's just a table that happens to match the naming
+		// pattern, not treated differently from any other table.
 		if (
-			strpos( $table, 'wptravelengine' ) !== false ||
-			strpos( $table, 'travel_engine' ) !== false ||
-			strpos( $table, 'wte_' ) !== false
+			\WPTravelEngineDevZone\Plugin::is_wte_active() &&
+			(
+				strpos( $table, 'wptravelengine' ) !== false ||
+				strpos( $table, 'travel_engine' ) !== false ||
+				strpos( $table, 'wte_' ) !== false
+			)
 		) {
 			return 'wte';
 		}

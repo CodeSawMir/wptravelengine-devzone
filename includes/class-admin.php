@@ -55,25 +55,11 @@ class Admin {
 	 * @return array<string,mixed>
 	 */
 	public static function get_tabs(): array {
-		$tabs = apply_filters( 'wpte_devzone_tabs', [
+		$tabs = [
 			'marketplace' => [
 				'title' => __( 'Market', 'wptravelengine-devzone' ),
 				'priority' => 2,
 				'on_dev' => true,
-			],
-			// 'perf'    => [
-			// 	'title'  => __( 'Perf', 'wptravelengine-devzone' ),
-			// 	'on_dev' => true,
-			// ],
-			'devzone' => [
-				'title'   => __( 'Inspect', 'wptravelengine-devzone' ),
-				'subtabs' => [
-					'overview'  => __( 'Overview',   'wptravelengine-devzone' ),
-					'trips'     => __( 'Trips',       'wptravelengine-devzone' ),
-					'bookings'  => __( 'Bookings',    'wptravelengine-devzone' ),
-					'payments'  => __( 'Payments',    'wptravelengine-devzone' ),
-					'customers' => __( 'Customers',   'wptravelengine-devzone' ),
-				],
 			],
 			'query'   => __( 'Query', 'wptravelengine-devzone' ),
 			'cron'    => __( 'Crontrol',     'wptravelengine-devzone' ),
@@ -82,7 +68,6 @@ class Admin {
 				'priority' => 10,
 				'subtabs'  => [
 					'wordpress'      => [ 'title' => __( 'WordPress', 'wptravelengine-devzone' ), 'on_dev' => true ],
-					'wptravelengine' => __( 'WP Travel Engine', 'wptravelengine-devzone' ),
 				],
 			],
 			'tinker' => [
@@ -90,11 +75,34 @@ class Admin {
 				'priority' => 11,
 				// 'on_dev' => true
 			],
-		] );
+		];
+
+		// Inspector tab and WTE log subtab only make sense with WP Travel
+		// Engine's data model present.
+		if ( Plugin::is_wte_active() ) {
+			// 'perf'    => [
+			// 	'title'  => __( 'Perf', 'wptravelengine-devzone' ),
+			// 	'on_dev' => true,
+			// ],
+			$tabs['devzone'] = [
+				'title'   => __( 'Inspect', 'wptravelengine-devzone' ),
+				'priority' => 5,
+				'subtabs' => [
+					'overview'  => __( 'Overview',   'wptravelengine-devzone' ),
+					'trips'     => __( 'Trips',       'wptravelengine-devzone' ),
+					'bookings'  => __( 'Bookings',    'wptravelengine-devzone' ),
+					'payments'  => __( 'Payments',    'wptravelengine-devzone' ),
+					'customers' => __( 'Customers',   'wptravelengine-devzone' ),
+				],
+			];
+			$tabs['logs']['subtabs']['wptravelengine'] = __( 'WP Travel Engine', 'wptravelengine-devzone' );
+		}
+
+		$tabs = apply_filters( 'wpte_devzone_tabs', $tabs );
 
 		uasort( $tabs, static function ( $a, $b ): int {
-			$pa = is_array( $a ) ? ( (int) ( $a['priority'] ?? 5 ) ) : 5;
-			$pb = is_array( $b ) ? ( (int) ( $b['priority'] ?? 5 ) ) : 5;
+			$pa = is_array( $a ) ? ( (float) ( $a['priority'] ?? 6 ) ) : 6;
+			$pb = is_array( $b ) ? ( (float) ( $b['priority'] ?? 6 ) ) : 6;
 			return $pa <=> $pb;
 		} );
 
@@ -391,6 +399,7 @@ class Admin {
 			'post_types'   => $post_types,
 			'devFeatures'  => self::get_dev_features(),
 			'groupSubtabs' => $group_subtabs,
+			'wteActive'    => Plugin::is_wte_active(),
 		] );
 
 		// Let each tool enqueue its own assets (e.g. ToolQuery loads tabs/query.js).

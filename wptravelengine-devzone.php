@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WPTE DevZone
  * Plugin URI:  https://github.com/CodeSawMir
- * Description: Visual database inspector for WP Travel Engine — diagnose and fix data issues directly in WP Admin.
+ * Description: Visual database inspector, query tool, code sandbox, and cron/log manager for WP Admin — with a dedicated Inspector suite when WP Travel Engine is active.
  * Version:     1.2.0
  * Author:      Samir Shrestha
  * Text Domain: wptravelengine-devzone
@@ -31,17 +31,8 @@ add_action( 'plugins_loaded', function () {
 		return;
 	}
 
-	if ( ! defined( 'WP_TRAVEL_ENGINE_VERSION' ) ) {
-		// Show the dependency notice only outside our own page to avoid double-notice clutter.
-		add_action( 'admin_notices', function () {
-			$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-			if ( $screen && strpos( $screen->id, \WPTravelEngineDevZone\Admin::PAGE_SLUG ) !== false ) {
-				return;
-			}
-			echo '<div class="notice notice-error"><p><strong>WTE Dev Zone</strong> requires the <strong>WP Travel Engine</strong> plugin to be active.</p></div>';
-		} );
-		return;
-	}
-
+	// WP Travel Engine is optional: when active, its Inspector tools and log
+	// tab are registered; the rest of Dev Zone (Tinker, Query, Cron, Logs,
+	// Marketplace) works standalone against any WordPress install.
 	\WPTravelEngineDevZone\Plugin::instance();
 }, 20 );

@@ -7,15 +7,18 @@
 
 import { DomHelper } from '../dom-helper.js';
 
-const { ajaxurl, nonce } = wpteDbg;
+const { ajaxurl, nonce, wteActive } = wpteDbg;
 
 const PAGE_SIZE = 10;
 
 // Prefixes that identify WP Travel Engine cron hooks.
 const WPTE_PREFIXES = [ 'wptravelengine', 'wptravelengine/', 'wp_travel_engine', 'wpte_' ];
 
+// Only split out a dedicated WTE section when WP Travel Engine is active —
+// otherwise a hook merely matching the naming pattern shouldn't be pinned
+// into its own section on a site that isn't running WTE.
 function isWpteCron( hook ) {
-	return WPTE_PREFIXES.some( ( p ) => hook.startsWith( p ) );
+	return wteActive && WPTE_PREFIXES.some( ( p ) => hook.startsWith( p ) );
 }
 
 export class CronTab {
@@ -152,7 +155,7 @@ export class CronTab {
 
 		if ( other.length ) {
 			this._listEl.appendChild(
-				this._renderSection( 'Others', other, 'other', false )
+				this._renderSection( wpte.length ? 'Others' : 'All', other, 'other', false )
 			);
 		}
 	}
