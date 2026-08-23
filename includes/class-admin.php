@@ -86,8 +86,9 @@ class Admin {
 				],
 			],
 			'tinker' => [
-				'title'    => '&lt;/&gt;',
+				'title'    => __( 'Tinker', 'wptravelengine-devzone' ),
 				'priority' => 11,
+				// 'on_dev' => true
 			],
 		] );
 
@@ -149,6 +150,56 @@ class Admin {
 		check_ajax_referer( self::NONCE );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => 'Forbidden' ], 403 );
+		}
+	}
+
+	/**
+	 * Whether the Dev Zone's code-execution surface is permitted here.
+	 *
+	 * On production this is a HARD block with no escape hatch — deliberately
+	 * not filterable, because Tinker executes arbitrary PHP and that must never
+	 * be reachable on a live client site regardless of what a stray mu-plugin
+	 * or a copy-pasted filter asks for.
+	 *
+	 * wp_get_environment_type() returns 'production' when WP_ENVIRONMENT_TYPE
+	 * is unset, so an ordinary live site is blocked with no configuration.
+	 *
+	 * Off production this is on by default, and the filter can only ever
+	 * tighten it further — it cannot grant execution anywhere it isn't already
+	 * allowed:
+	 *   add_filter( 'wpte_devzone_allow_writes', '__return_false' );
+	 *
+	 * Scope note: this currently guards Tinker's three endpoints only. The
+	 * other mutating endpoints (arbitrary-table writes via db_action, plugin
+	 * install/activate/delete, on-demand cron_run, bulk import_trips, option
+	 * writes, debug-flag writes) remain guarded by manage_options + nonce alone
+	 * and ARE live on production. Widening this gate to cover them is a
+	 * deliberate open decision, not an oversight.
+	 */
+	public static function writes_enabled(): bool {
+		if ( 'production' === wp_get_environment_type() ) {
+			return false;
+		}
+		return false !== apply_filters( 'wpte_devzone_allow_writes', true );
+	}
+
+	/**
+	 * Verifies nonce + capability, then the unbypassable production gate.
+	 *
+	 * Used by Tinker's run/save/delete endpoints. Available to any other
+	 * handler that should inherit the same hard production block.
+	 */
+	public static function verify_write_request(): void {
+		self::verify_request();
+
+		if ( ! self::writes_enabled() ) {
+			wp_send_json_error(
+				[
+					'message'   => __( 'Tinker is disabled on this environment.', 'wptravelengine-devzone' ),
+					'read_only' => true,
+				],
+				403
+			);
 		}
 	}
 

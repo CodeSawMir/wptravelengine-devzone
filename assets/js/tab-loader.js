@@ -124,6 +124,9 @@ export class TabLoader {
 			t.setAttribute( 'aria-selected', tSlug === slug ? 'true' : 'false' );
 		} );
 
+		if ( 'tinker' === slug ) document.querySelector( '.wte-dbg-header-meta .wte-dbg-header-tinker-btn' ).classList.add('is-active')
+		else document.querySelector( '.wte-dbg-header-meta .wte-dbg-header-tinker-btn' ).classList.remove('is-active')
+
 		try {
 			const url = new URL( window.location.href );
 			if ( slug === 'overview' ) {

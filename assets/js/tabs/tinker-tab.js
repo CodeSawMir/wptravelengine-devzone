@@ -517,12 +517,14 @@ export class TinkerTab {
 
 		// Only the tree structure expands here — truncated leaf values stay
 		// collapsed until the user clicks that specific value.
-		const { expandAllBtn, treeEl } = HierarchyView.renderTreeSection( data.result_tree, { toggleValues: false, maxLen: 120 } );
+		const { expandAllBtn, treeEl, graphToggleBtn, graphEl } = HierarchyView.renderTreeSection( data.result_tree, { toggleValues: false, maxLen: 120 } );
 		labelRow.insertBefore( expandAllBtn, labelRow.firstChild );
+		labelRow.appendChild( graphToggleBtn );
 
 		const body = document.createElement( 'div' );
 		body.className = 'wte-dbg-tinker-block-body is-tree';
 		body.appendChild( treeEl );
+		body.appendChild( graphEl );
 		block.appendChild( body );
 
 		return block;

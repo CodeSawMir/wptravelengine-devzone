@@ -97,7 +97,7 @@ $active_parent = $subtab_parent[ $active_slug ] ?? null;
 		</div>
 		<div id="wte-dbg-wp-debug-notice" class="wte-dbg-wp-notice" style="display:none;" aria-live="polite" aria-atomic="true"><span class="wte-dbg-loader-note"><?php esc_html_e( 'Reload the page for changes to take effect.', 'wptravelengine-devzone' ); ?></span></div>
 		<div class="wte-dbg-header-meta">
-			<button type="button" class="wte-dbg-header-tinker-btn" title="<?php esc_attr_e( 'Tinker', 'wptravelengine-devzone' ); ?>">&lt;/&gt;</button>
+			<button type="button" class="wte-dbg-header-tinker-btn" data-dev="1" title="<?php esc_attr_e( 'Tinker', 'wptravelengine-devzone' ); ?>">&lt;/&gt;</button>
 			<button type="button" class="wte-dbg-meta-collapse-btn" aria-expanded="false" title="<?php esc_attr_e( 'Show info', 'wptravelengine-devzone' ); ?>">
 				<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 			</button>

@@ -1200,6 +1200,252 @@ summary.wte-dbg-key::after {
 	font-family: -apple-system, sans-serif;
 }
 
+/* ---- Graph view toggle + canvas ---- */
+.wte-dbg-graph-toggle {
+	cursor: pointer;
+	border: 1px solid var(--dbg-border);
+	border-radius: 3px;
+	padding: 1px 6px;
+	font-size: 12px;
+	/* Both host rows (badge row, tinker block label) are flex, where plain
+	   `float` has no effect on flex items — this is the flex equivalent of
+	   floating the toggle to the row's right edge. */
+	margin-left: auto;
+}
+
+.wte-dbg-graph-toggle:hover {
+	color: var(--dbg-accent);
+	border-color: var(--dbg-accent);
+}
+
+.wte-dbg-graph-mount {
+	position: relative;
+	width: 100%;
+}
+
+/* Graph view keeps its own fixed dark palette on purpose — it does NOT follow
+   the devzone light/dark toggle. Declaring the vars on the element itself (not
+   on .wte-devzone-wrap) also means they travel with it when maximize portals
+   the node to <body>, outside the wrap's cascade. */
+.wte-dbg-graph-view {
+	--dbg-graph-bg: #1c1917;
+	--dbg-graph-branch: #2dd4bf;
+	--dbg-graph-leaf: #fbbf24;
+	--dbg-graph-label: #f5f5f4;
+	--dbg-graph-type: #78716c;
+	--dbg-graph-edge: #44403c;
+	--dbg-graph-match: #f87171;
+	--dbg-graph-ui: #f5f5f4;
+	--dbg-graph-ui-dim: #a8a29e;
+	position: relative;
+	width: 100%;
+	height: 460px;
+	border-radius: 4px;
+	overflow: hidden;
+	background: var(--dbg-graph-bg);
+}
+
+.wte-dbg-graph-view.is-maximized {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	border-radius: 0;
+	z-index: 99999;
+}
+
+.wte-dbg-graph-toolbar {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wte-dbg-graph-maximize,
+.wte-dbg-graph-search {
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 14px;
+	color: var(--dbg-graph-ui);
+	line-height: 1;
+	transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.wte-dbg-graph-maximize {
+	flex: none;
+	height: 28px;
+	border-radius: 3px;
+	font-size: 14px;
+	padding: 0 8px;
+	cursor: pointer;
+}
+
+.wte-dbg-graph-maximize:hover {
+	background: rgba(255, 255, 255, 0.18);
+}
+
+.wte-dbg-graph-search {
+	flex: none;
+	width: 170px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 10px;
+	box-sizing: border-box;
+}
+
+.wte-dbg-graph-search:focus-within {
+	border-color: var(--dbg-graph-branch);
+	background: rgba(255, 255, 255, 0.14);
+}
+
+/* Match count — empty (and so zero-width) unless a search is active. */
+.wte-dbg-graph-search-count {
+	flex: none;
+	color: var(--dbg-graph-ui-dim);
+	font-size: 10px;
+	font-variant-numeric: tabular-nums;
+}
+
+.wte-dbg-graph-search-count:not(:empty) {
+	background: rgba(255, 255, 255, 0.14);
+	border-radius: 8px;
+	padding: 2px 5px;
+}
+
+/* Scoped under .wte-dbg-graph-search (not just the bare class) and !important
+   on the properties WP-admin's own input[type=text] rules set with equal-or-
+   higher specificity — otherwise those defaults (white bg, gray border,
+   box-shadow, min-height) win and the input never picks up this styling. */
+.wte-dbg-graph-search .wte-dbg-graph-search-input {
+	flex: 1;
+	min-width: 0;
+	width: auto;
+	height: auto !important;
+	min-height: 0 !important;
+	border: none !important;
+	background: none !important;
+	box-shadow: none !important;
+	color: var(--dbg-graph-ui) !important;
+	font-size: 12px !important;
+	line-height: 1 !important;
+	padding: 0 !important;
+	margin: 0;
+	outline: none;
+}
+
+.wte-dbg-graph-search .wte-dbg-graph-search-input::placeholder {
+	color: var(--dbg-graph-ui-dim);
+}
+
+.wte-dbg-graph-search-clear {
+	display: none;
+	flex: none;
+	width: 15px;
+	height: 15px;
+	border: none;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.2);
+	color: var(--dbg-graph-ui);
+	font-size: 11px;
+	line-height: 1;
+	padding: 0;
+	cursor: pointer;
+}
+
+.wte-dbg-graph-search-clear:hover {
+	background: rgba(255, 255, 255, 0.34);
+}
+
+.wte-dbg-graph-search.has-value .wte-dbg-graph-search-clear {
+	display: block;
+}
+
+.wte-dbg-graph-node.is-match circle {
+	stroke: var(--dbg-graph-match);
+	stroke-width: 2.5px;
+}
+
+/* The one Enter is currently parked on, distinct from the rest of the matches. */
+.wte-dbg-graph-node.is-current-match circle {
+	stroke-width: 3.5px;
+	filter: drop-shadow(0 0 3px var(--dbg-graph-match));
+}
+
+/* Search miss — faded back rather than removed, so the graph keeps its shape. */
+.wte-dbg-graph-node.is-dimmed,
+.wte-dbg-graph-link.is-dimmed {
+	opacity: 0.22;
+}
+
+.wte-dbg-graph-node.is-dimmed:hover {
+	opacity: 0.55;
+}
+
+.wte-dbg-graph-no-match {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--dbg-graph-ui-dim);
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.wte-dbg-graph-svg {
+	display: block;
+	cursor: grab;
+	touch-action: none;
+}
+
+.wte-dbg-graph-svg:active {
+	cursor: grabbing;
+}
+
+.wte-dbg-graph-node {
+	cursor: pointer;
+}
+
+.wte-dbg-graph-node text {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	user-select: none;
+}
+
+.wte-dbg-graph-circle {
+	stroke: var(--dbg-graph-bg);
+	stroke-width: 1.5px;
+}
+
+.wte-dbg-graph-circle-branch {
+	fill: var(--dbg-graph-branch);
+}
+
+.wte-dbg-graph-circle-leaf {
+	fill: var(--dbg-graph-leaf);
+}
+
+.wte-dbg-graph-label {
+	fill: var(--dbg-graph-label);
+}
+
+.wte-dbg-graph-type {
+	fill: var(--dbg-graph-type);
+}
+
+.wte-dbg-graph-expander {
+	fill: var(--dbg-graph-bg);
+}
+
+.wte-dbg-graph-link {
+	stroke: var(--dbg-graph-edge);
+	fill: none;
+	stroke-width: 1.4px;
+}
+
 .wte-dbg-edit-btn {
 	background: none;
 	border: none;

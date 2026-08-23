@@ -20,6 +20,7 @@
  */
 import { Icons }     from '../constants.js';
 import { DomHelper } from '../dom-helper.js';
+import { GraphView } from './graph-view.js';
 
 export class HierarchyView {
 	/** Values longer than this are truncated with an ellipsis (read-only view) or rendered as a growable textarea (editable view). */
@@ -192,7 +193,7 @@ export class HierarchyView {
 	 * @param {Object}  [opts]
 	 * @param {boolean} [opts.toggleValues=true]    Passed through to wireExpandAll().
 	 * @param {number}  [opts.maxLen]               Truncation length for both the initial render and expand-all.
-	 * @returns {{ expandAllBtn: HTMLElement, treeEl: HTMLElement }}
+	 * @returns {{ expandAllBtn: HTMLElement, treeEl: HTMLElement, graphToggleBtn: HTMLElement, graphEl: HTMLElement }}
 	 */
 	static renderTreeSection( tree, { toggleValues = true, maxLen = HierarchyView.TRUNCATE_LEN } = {} ) {
 		const treeEl = HierarchyView.build( tree );
@@ -204,7 +205,34 @@ export class HierarchyView {
 		expandAllBtn.title       = 'Expand all';
 		HierarchyView.wireExpandAll( expandAllBtn, treeEl, { toggleValues, maxLen } );
 
-		return { expandAllBtn, treeEl };
+		// Graph view is built lazily on first switch — laying it out costs real
+		// work (force relax) that a caller who never clicks "Graph" shouldn't pay.
+		const graphEl = document.createElement( 'div' );
+		graphEl.className = 'wte-dbg-graph-mount';
+		graphEl.style.display = 'none';
+
+		const graphToggleBtn = document.createElement( 'span' );
+		graphToggleBtn.className   = 'wte-dbg-count wte-dbg-graph-toggle';
+		graphToggleBtn.textContent = Icons.GRAPH_VIEW;
+		graphToggleBtn.title       = 'Switch to graph view';
+
+		graphToggleBtn.addEventListener( 'click', () => {
+			const showingGraph = graphEl.style.display !== 'none';
+			if ( showingGraph ) {
+				graphEl.style.display = 'none';
+				treeEl.style.display  = '';
+				graphToggleBtn.textContent = Icons.GRAPH_VIEW;
+				graphToggleBtn.title       = 'Switch to graph view';
+			} else {
+				if ( ! graphEl.firstChild ) graphEl.appendChild( GraphView.build( tree ) );
+				treeEl.style.display  = 'none';
+				graphEl.style.display = '';
+				graphToggleBtn.textContent = Icons.TREE_VIEW;
+				graphToggleBtn.title       = 'Switch to tree view';
+			}
+		} );
+
+		return { expandAllBtn, treeEl, graphToggleBtn, graphEl };
 	}
 
 	// -------------------------------------------------------------------------

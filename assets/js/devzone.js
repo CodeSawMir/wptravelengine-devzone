@@ -36,10 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	nav.init((slug, extra) => loader.loadTab(slug, extra));
 	document.querySelector('.wte-dbg-back-btn')?.addEventListener('click', () => loader.goBack());
-	document.querySelector('.wte-dbg-header-tinker-btn')?.addEventListener('click', (e) => {
-		e.currentTarget.classList.toggle('is-active');
-		loader.loadTab('tinker');
-	});
+	document.querySelector('.wte-dbg-header-tinker-btn')?.addEventListener('click', () => loader.loadTab('tinker') );
 
 	initThemeToggle();
 	initDevModeToggle((slug) => loader.loadTab(slug), () => loader.currentSlug);

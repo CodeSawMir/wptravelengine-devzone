@@ -151,6 +151,18 @@ class ToolOverview extends AbstractTool {
 			wp_send_json_error( [ 'message' => 'Option not allowed' ], 403 );
 		}
 
+		// The 'wpte_' prefix above is wider than save_option()/get_option_value()
+		// allow, which would otherwise let a UI action erase the Tinker execution
+		// audit trail or the stored GitHub token through this endpoint.
+		$protected = [
+			'wpte_dz_github_token',
+			'wpte_devzone_tinker_audit_log',
+			'wpte_devzone_marketplace_installed',
+		];
+		if ( in_array( $option_name, $protected, true ) ) {
+			wp_send_json_error( [ 'message' => 'This option is protected and cannot be deleted here.' ], 403 );
+		}
+
 		$this->log_change( "option:{$option_name}", get_option( $option_name ), '(deleted)' );
 
 		delete_option( $option_name );
