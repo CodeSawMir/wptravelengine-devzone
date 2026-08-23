@@ -400,6 +400,7 @@ class Admin {
 			'devFeatures'  => self::get_dev_features(),
 			'groupSubtabs' => $group_subtabs,
 			'wteActive'    => Plugin::is_wte_active(),
+			'selfVersion'  => WPTE_DEVZONE_VERSION,
 		] );
 
 		// Let each tool enqueue its own assets (e.g. ToolQuery loads tabs/query.js).

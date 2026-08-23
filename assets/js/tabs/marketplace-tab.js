@@ -6,7 +6,7 @@
 
 import { DomHelper } from '../dom-helper.js';
 
-const { ajaxurl, nonce } = wpteDbg;
+const { ajaxurl, nonce, selfVersion } = wpteDbg;
 
 export class MarketplaceTab {
 	constructor( contentEl ) {
@@ -37,6 +37,7 @@ export class MarketplaceTab {
 		this._tokenConnect = this.contentEl.querySelector( '.wte-dbg-marketplace-token-connect' );
 		this._tokenClear   = this.contentEl.querySelector( '.wte-dbg-marketplace-token-clear' );
 		this._tokenStatus  = this.contentEl.querySelector( '.wte-dbg-marketplace-token-status' );
+		this._selfCardEl   = this._makeSelfCard();
 
 		this._refreshBtn?.addEventListener( 'click', () => this._load( true ) );
 
@@ -160,6 +161,7 @@ export class MarketplaceTab {
 
 	_renderGrid() {
 		this._clear( this._gridEl );
+		this._gridEl.appendChild( this._selfCardEl );
 
 		let plugins = this._allPlugins;
 
@@ -596,6 +598,7 @@ export class MarketplaceTab {
 
 	_renderSkeleton() {
 		this._clear( this._gridEl );
+		this._gridEl.appendChild( this._selfCardEl );
 		const frag = document.createDocumentFragment();
 		for ( let i = 0; i < 6; i++ ) {
 			const card = document.createElement( 'div' );
@@ -647,7 +650,165 @@ export class MarketplaceTab {
 
 	_renderError( msg ) {
 		this._clear( this._gridEl );
+		this._gridEl.appendChild( this._selfCardEl );
 		this._gridEl.appendChild( this._makeEmpty( msg ) );
+	}
+
+	/** Build the pinned "Dev Zone" self-status card shown first in the grid. */
+	_makeSelfCard() {
+		const card = document.createElement( 'div' );
+		card.className = 'wte-dbg-marketplace-card is-self';
+
+		const body = document.createElement( 'div' );
+		body.className = 'wte-dbg-marketplace-card-body';
+
+		const header = document.createElement( 'div' );
+		header.className = 'wte-dbg-marketplace-card-header';
+
+		const avatarEl = document.createElement( 'div' );
+		avatarEl.className         = 'wte-dbg-marketplace-card-avatar';
+		avatarEl.style.background  = '#163f78';
+		avatarEl.textContent       = 'D';
+		header.appendChild( avatarEl );
+
+		const titleArea = document.createElement( 'div' );
+		titleArea.className = 'wte-dbg-marketplace-card-title';
+
+		const nameEl = document.createElement( 'div' );
+		nameEl.className   = 'wte-dbg-marketplace-card-name';
+		nameEl.textContent = 'Dev Zone';
+		titleArea.appendChild( nameEl );
+
+		const authorWrap = document.createElement( 'div' );
+		authorWrap.className = 'wte-dbg-marketplace-card-author-wrap';
+
+		const titleMeta = document.createElement( 'div' );
+		titleMeta.className = 'wte-dbg-marketplace-card-title-meta';
+
+		const verEl = document.createElement( 'span' );
+		verEl.className   = 'wte-dbg-marketplace-card-ver';
+		verEl.textContent = 'v' + ( selfVersion || '' );
+		titleMeta.appendChild( verEl );
+
+		const statusInline = document.createElement( 'span' );
+		statusInline.className   = 'wte-dbg-marketplace-status is-active';
+		statusInline.textContent = 'This install';
+		titleMeta.appendChild( statusInline );
+
+		authorWrap.appendChild( titleMeta );
+		titleArea.appendChild( authorWrap );
+		header.appendChild( titleArea );
+		body.appendChild( header );
+
+		const badge = document.createElement( 'span' );
+		badge.className   = 'wte-dbg-marketplace-source-badge badge-registry';
+		badge.textContent = 'Official';
+		body.appendChild( badge );
+
+		const desc = document.createElement( 'p' );
+		desc.className   = 'wte-dbg-marketplace-card-desc';
+		desc.textContent = 'This Dev Zone install. Check GitHub’s main branch for a newer version.';
+		body.appendChild( desc );
+
+		const statusEl = document.createElement( 'p' );
+		statusEl.className = 'wte-dbg-marketplace-self-status is-hidden';
+		body.appendChild( statusEl );
+
+		card.appendChild( body );
+
+		const footer = document.createElement( 'div' );
+		footer.className = 'wte-dbg-marketplace-card-footer';
+
+		const actionsEl = document.createElement( 'div' );
+		actionsEl.className = 'wte-dbg-marketplace-card-actions';
+
+		const checkBtn = document.createElement( 'button' );
+		checkBtn.type        = 'button';
+		checkBtn.className   = 'wte-dbg-marketplace-action-btn';
+		checkBtn.textContent = 'Check for updates';
+
+		const updateBtn = document.createElement( 'button' );
+		updateBtn.type        = 'button';
+		updateBtn.className   = 'wte-dbg-marketplace-action-btn is-activate wte-dbg-marketplace-self-update is-hidden';
+		updateBtn.textContent = 'Update now';
+
+		checkBtn.addEventListener( 'click', () => this._checkSelfUpdate( checkBtn, updateBtn, statusEl ) );
+		updateBtn.addEventListener( 'click', () => this._selfUpdate( updateBtn, statusEl, card ) );
+
+		actionsEl.appendChild( checkBtn );
+		actionsEl.appendChild( updateBtn );
+		footer.appendChild( actionsEl );
+		card.appendChild( footer );
+
+		return card;
+	}
+
+	_checkSelfUpdate( checkBtn, updateBtn, statusEl ) {
+		checkBtn.disabled    = true;
+		checkBtn.textContent = 'Checking…';
+		this._setSelfStatus( statusEl, '', '' );
+
+		this._post( 'wpte_devzone_self_check_update' )
+			.then( ( res ) => {
+				checkBtn.disabled    = false;
+				checkBtn.textContent = 'Check for updates';
+
+				if ( ! res.success ) {
+					this._setSelfStatus( statusEl, res.data?.message || 'Check failed.', 'error' );
+					return;
+				}
+
+				const { current, latest, update_available } = res.data;
+				if ( update_available ) {
+					this._setSelfStatus( statusEl, 'v' + latest + ' available (current v' + current + ')', 'info' );
+					updateBtn.classList.remove( 'is-hidden' );
+					updateBtn.dataset.latest = latest;
+				} else {
+					this._setSelfStatus( statusEl, 'Up to date (v' + current + ').', 'ok' );
+					updateBtn.classList.add( 'is-hidden' );
+				}
+			} )
+			.catch( () => {
+				checkBtn.disabled    = false;
+				checkBtn.textContent = 'Check for updates';
+				this._setSelfStatus( statusEl, 'Request failed.', 'error' );
+			} );
+	}
+
+	_selfUpdate( updateBtn, statusEl, card ) {
+		const latest = updateBtn.dataset.latest || '';
+		if ( ! window.confirm( 'Update Dev Zone to v' + latest + '? The page will reload.' ) ) return;
+
+		updateBtn.disabled    = true;
+		updateBtn.textContent = 'Updating…';
+		card.classList.add( 'is-loading' );
+		this._setSelfStatus( statusEl, 'Updating Dev Zone…', 'info' );
+
+		this._post( 'wpte_devzone_self_update' )
+			.then( ( res ) => {
+				card.classList.remove( 'is-loading' );
+				if ( res.success ) {
+					this._setSelfStatus( statusEl, res.data.message, 'success' );
+					setTimeout( () => window.location.reload(), 1500 );
+				} else {
+					updateBtn.disabled    = false;
+					updateBtn.textContent = 'Update now';
+					this._setSelfStatus( statusEl, res.data?.message || 'Update failed.', 'error' );
+				}
+			} )
+			.catch( () => {
+				card.classList.remove( 'is-loading' );
+				updateBtn.disabled    = false;
+				updateBtn.textContent = 'Update now';
+				this._setSelfStatus( statusEl, 'Request failed.', 'error' );
+			} );
+	}
+
+	_setSelfStatus( statusEl, text, type ) {
+		statusEl.textContent = text;
+		statusEl.className   = 'wte-dbg-marketplace-self-status' +
+			( type ? ' is-' + type : '' ) +
+			( text ? '' : ' is-hidden' );
 	}
 
 	_post( action, extra, signal ) {

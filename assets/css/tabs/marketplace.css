@@ -12,6 +12,27 @@
 	height: 100%;
 }
 
+/* ── Self-status card ── */
+.wte-dbg-marketplace-card.is-self {
+	border-color: #163f78;
+	box-shadow: 0 0 0 1px rgba(22, 63, 120, .25);
+}
+
+.wte-dbg-marketplace-self-status {
+	margin: 8px 0 0;
+	font-size: 12px;
+}
+
+.wte-dbg-marketplace-self-status.is-error   { color: #d63638; }
+.wte-dbg-marketplace-self-status.is-success,
+.wte-dbg-marketplace-self-status.is-ok      { color: #00a32a; }
+.wte-dbg-marketplace-self-status.is-info    { opacity: .8; }
+.wte-dbg-marketplace-self-status.is-hidden  { display: none; }
+
+.wte-dbg-marketplace-self-update.is-hidden {
+	display: none;
+}
+
 /* ── Toolbar ── */
 .wte-dbg-marketplace-toolbar {
 	display: flex;
