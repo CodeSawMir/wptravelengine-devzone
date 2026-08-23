@@ -185,6 +185,9 @@ class Admin {
 	 * deliberate open decision, not an oversight.
 	 */
 	public static function writes_enabled(): bool {
+		if ( defined( 'WP_DEVZONE_DEBUG' ) && WP_DEVZONE_DEBUG ) {
+			return true;
+		}
 		if ( 'production' === wp_get_environment_type() ) {
 			return false;
 		}

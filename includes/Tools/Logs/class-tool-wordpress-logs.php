@@ -63,6 +63,13 @@ class ToolWordpressLogs extends AbstractTool {
 		if ( ! empty( $flags['SCRIPT_DEBUG'] ) ) {
 			defined( 'SCRIPT_DEBUG' ) || define( 'SCRIPT_DEBUG', true );
 		}
+
+		// Not a WP core constant — a Dev Zone-only convenience flag checked by
+		// Admin::writes_enabled() to force-enable Tinker outside production,
+		// bypassing the wpte_devzone_allow_writes filter.
+		if ( ! empty( $flags['WP_DEVZONE_DEBUG'] ) ) {
+			defined( 'WP_DEVZONE_DEBUG' ) || define( 'WP_DEVZONE_DEBUG', true );
+		}
 	}
 
 	/**
@@ -71,7 +78,7 @@ class ToolWordpressLogs extends AbstractTool {
 	public function save_flags(): void {
 		Admin::verify_request();
 
-		$allowed  = [ 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG' ];
+		$allowed  = [ 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG', 'WP_DEVZONE_DEBUG' ];
 		$constant = strtoupper( sanitize_text_field( wp_unslash( $_POST['constant'] ?? '' ) ) );
 		$enable   = '1' === ( $_POST['value'] ?? '0' );
 
