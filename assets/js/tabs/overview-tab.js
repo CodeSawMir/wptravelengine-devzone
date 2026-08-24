@@ -142,7 +142,6 @@ export class OverviewTab {
 			.then( ( res ) => {
 				this._optionCtrl = null;
 				body.classList.remove( 'wte-dbg-skeleton' );
-				DomHelper.clearStatus();
 				if ( res.success ) {
 					DomHelper.setServerHtml( body, res.data.html );
 					DomHelper.applyRowStripes( body );
@@ -181,15 +180,20 @@ export class OverviewTab {
 
 						summary.appendChild( expandBtn );
 					}
+					DomHelper.setStatus( 'Loaded', 'success', 2 );
 				} else {
 					body.textContent = 'Error loading option.';
+					DomHelper.setStatus( 'Failed to load option', 'error', 2 );
 				}
 			} )
 			.catch( ( err ) => {
-				if ( err.name === 'AbortError' ) return;
+				if ( err.name === 'AbortError' ) {
+					DomHelper.setStatus( 'Cancelled', 'cancelled', 2 );
+					return;
+				}
 				body.classList.remove( 'wte-dbg-skeleton' );
-				DomHelper.clearStatus();
 				body.textContent = 'Request failed.';
+				DomHelper.setStatus( 'Request failed', 'error', 2 );
 			} );
 	}
 

@@ -53,6 +53,10 @@ foreach ( $tabs as $group_slug => $group ) {
 }
 
 $active_parent = $subtab_parent[ $active_slug ] ?? null;
+
+$brand_label = \WPTravelEngineDevZone\Plugin::is_wte_active()
+	? __( 'WP Travel Engine - Dev Zone', 'wptravelengine-devzone' )
+	: __( 'Dev Zone', 'wptravelengine-devzone' );
 ?>
 <div class="wrap wte-devzone-wrap">
 <script>(function(){try{if(localStorage.getItem('wte_dbg_theme')==='dark'){document.currentScript.parentElement.classList.add('wte-dbg-dark');document.body.classList.add('wte-dbg-page-dark');}}catch(e){}}());</script>
@@ -66,7 +70,7 @@ $active_parent = $subtab_parent[ $active_slug ] ?? null;
 				<span class="wte-dbg-dev-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="orange" aria-hidden="true"><path d="M20 8h-2.81A6 6 0 0 0 6.81 8H4a1 1 0 0 0 0 2h2v1a8 8 0 0 0 .07 1H4a1 1 0 0 0 0 2h2.64A6 6 0 0 0 18 14v-1h2a1 1 0 0 0 0-2h-2.07A8 8 0 0 0 18 11v-1h2a1 1 0 0 0 0-2zM9 7.5a3 3 0 0 1 6 0H9zm3 10.5a4 4 0 0 1-4-4v-3h8v3a4 4 0 0 1-4 4zm-1-6v2h2v-2h-2z"/><circle cx="9" cy="3" r="1.5"/><circle cx="15" cy="3" r="1.5"/></svg></span>
 			</button>
 			<a class="wte-dbg-header-brand-link" href="<?php echo esc_url( add_query_arg( [ 'page' => \WPTravelEngineDevZone\Admin::PAGE_SLUG ], admin_url( 'tools.php' ) ) ); ?>">
-				<span class="wte-dbg-header-product"><?php esc_html_e( 'WP Travel Engine - Dev Zone', 'wptravelengine-devzone' ); ?></span>
+				<span class="wte-dbg-header-product"><?php echo esc_html( $brand_label ); ?></span>
 			</a>
 			<?php else : ?>
 			<svg class="wte-dbg-header-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="orange">
@@ -75,7 +79,7 @@ $active_parent = $subtab_parent[ $active_slug ] ?? null;
 				<circle cx="15" cy="3" r="1.5"/>
 			</svg>
 			<a class="wte-dbg-header-brand-link" href="<?php echo esc_url( add_query_arg( [ 'page' => \WPTravelEngineDevZone\Admin::PAGE_SLUG ], admin_url( 'tools.php' ) ) ); ?>">
-				<span class="wte-dbg-header-product"><?php esc_html_e( 'WP Travel Engine - Dev Zone', 'wptravelengine-devzone' ); ?></span>
+				<span class="wte-dbg-header-product"><?php echo esc_html( $brand_label ); ?></span>
 			</a>
 			<?php endif; ?>
 			<?php foreach ( $group_buttons as $slug => $label ) :
@@ -86,8 +90,9 @@ $active_parent = $subtab_parent[ $active_slug ] ?? null;
 			?>
 			<span class="wte-dbg-header-divider" aria-hidden="true"<?php echo $is_dev ? ' data-dev="1"' : ''; ?>></span>
 			<button type="button"
-			        class="wte-dbg-group-btn<?php echo $is_active ? ' is-active' : ''; ?>"
+			        class="wte-dbg-group-btn<?php echo $is_active ? ' is-active' : '';?>"
 			        data-group="<?php echo esc_attr( $slug ); ?>"
+					<?php echo 'tinker' === $slug ? 'style="display: none;"' : ''; ?>
 			        <?php echo $is_dev ? 'data-dev="1"' : ''; ?>>
 				<?php echo esc_html( $label ); ?>
 			</button>
@@ -96,13 +101,16 @@ $active_parent = $subtab_parent[ $active_slug ] ?? null;
 		</div>
 		<div id="wte-dbg-wp-debug-notice" class="wte-dbg-wp-notice" style="display:none;" aria-live="polite" aria-atomic="true"><span class="wte-dbg-loader-note"><?php esc_html_e( 'Reload the page for changes to take effect.', 'wptravelengine-devzone' ); ?></span></div>
 		<div class="wte-dbg-header-meta">
+			<button type="button" class="wte-dbg-header-tinker-btn" data-dev="1" title="<?php esc_attr_e( 'Tinker', 'wptravelengine-devzone' ); ?>">&lt;/&gt;</button>
 			<button type="button" class="wte-dbg-meta-collapse-btn" aria-expanded="false" title="<?php esc_attr_e( 'Show info', 'wptravelengine-devzone' ); ?>">
 				<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 			</button>
 			<div class="wte-dbg-header-meta-inner">
 				<span class="wte-dbg-meta-pill">PHP&nbsp;<?php echo esc_html( PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION ); ?></span>
 				<span class="wte-dbg-meta-pill">WP&nbsp;<?php echo esc_html( get_bloginfo( 'version' ) ); ?></span>
+				<?php if ( \WPTravelEngineDevZone\Plugin::is_wte_active() ) : ?>
 				<span class="wte-dbg-meta-pill">WPTE&nbsp;<?php echo esc_html( WP_TRAVEL_ENGINE_VERSION ); ?></span>
+				<?php endif; ?>
 				<button type="button" class="wte-dbg-theme-toggle" title="<?php esc_attr_e( 'Toggle dark mode', 'wptravelengine-devzone' ); ?>">
 					<span class="wte-dbg-theme-icon">&#9728;</span>
 				</button>

@@ -30,6 +30,15 @@ class ToolOverview extends AbstractTool {
 		}
 	}
 
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-overview',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/overview.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
+
 	// -------------------------------------------------------------------------
 	// Endpoints
 	// -------------------------------------------------------------------------
@@ -140,6 +149,18 @@ class ToolOverview extends AbstractTool {
 
 		if ( strpos( $option_name, 'wp_travel_engine_' ) !== 0 && strpos( $option_name, 'wptravelengine_' ) !== 0 && strpos( $option_name, 'wpte_' ) !== 0 ) {
 			wp_send_json_error( [ 'message' => 'Option not allowed' ], 403 );
+		}
+
+		// The 'wpte_' prefix above is wider than save_option()/get_option_value()
+		// allow, which would otherwise let a UI action erase the Tinker execution
+		// audit trail or the stored GitHub token through this endpoint.
+		$protected = [
+			'wpte_dz_github_token',
+			'wpte_devzone_tinker_audit_log',
+			'wpte_devzone_marketplace_installed',
+		];
+		if ( in_array( $option_name, $protected, true ) ) {
+			wp_send_json_error( [ 'message' => 'This option is protected and cannot be deleted here.' ], 403 );
 		}
 
 		$this->log_change( "option:{$option_name}", get_option( $option_name ), '(deleted)' );

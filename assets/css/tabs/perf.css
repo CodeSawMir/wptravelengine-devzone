@@ -1,0 +1,347 @@
+/* ==========================================================================
+   Performance Tab
+   ========================================================================== */
+
+/* ==========================================================================
+   Performance Tab
+   ========================================================================== */
+
+.wte-dbg-perf-tab {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+/* ── Toolbar ── */
+.wte-dbg-perf-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 20px;
+	background: linear-gradient(135deg, #163f78 0%, #0c2c55 100%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	flex-shrink: 0;
+	margin: -3px -1px 0;
+}
+
+.wte-dbg-perf-toolbar-title {
+	font-size: 12px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.75);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+
+.wte-dbg-perf-toolbar-status {
+	display: flex;
+	align-items: center;
+	margin-left: auto;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+	flex-shrink: 0;
+}
+
+.wte-dbg-perf-toolbar-status.is-visible {
+	opacity: 1;
+}
+
+.wte-dbg-perf-toolbar-status.is-status-success .wte-dbg-loader-note {
+	color: #4ade80;
+}
+
+.wte-dbg-perf-toolbar-status.is-status-error .wte-dbg-loader-note {
+	color: #f87171;
+}
+
+.wte-dbg-perf-toolbar-status.is-status-info .wte-dbg-loader-note {
+	color: rgba(255, 255, 255, 0.75);
+}
+
+/* ── Body & Sections ── */
+.wte-dbg-perf-body {
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.wte-dbg-perf-section {
+	background: var(--dbg-surface);
+	border: 1px solid var(--dbg-border);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.wte-dbg-perf-section-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 16px;
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-perf-section-title {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--dbg-text);
+}
+
+.wte-dbg-perf-section-note {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	margin-left: auto;
+}
+
+/* ── Quick Stats Bar ── */
+.wte-dbg-perf-stats-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1px;
+	background: var(--dbg-border);
+}
+
+.wte-dbg-perf-stat-card {
+	flex: 1 1 140px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px 16px;
+	background: var(--dbg-surface);
+}
+
+.wte-dbg-perf-stat-card.is-warn {
+	background: #fff8f0;
+}
+
+.wte-dbg-perf-stat-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-perf-stat-value {
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--dbg-text);
+	line-height: 1.2;
+}
+
+.wte-dbg-perf-stat-sub {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-perf-stat-card.wte-dbg-perf-stat-skel {
+	pointer-events: none;
+}
+
+/* ── Action Rows (DB Cleanup + WTE Cleanup) ── */
+.wte-dbg-perf-action-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--dbg-border-faint);
+	transition: background 0.1s;
+}
+
+.wte-dbg-perf-action-row:last-child {
+	border-bottom: none;
+}
+
+.wte-dbg-perf-action-row.is-running {
+	background: #f0f6fc;
+}
+
+.wte-dbg-perf-action-row.is-success {
+	background: #f0fdf4;
+}
+
+.wte-dbg-perf-action-row.is-error {
+	background: #fff5f5;
+}
+
+.wte-dbg-perf-action-meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1;
+}
+
+.wte-dbg-perf-action-label {
+	font-size: 13px;
+	color: var(--dbg-text);
+}
+
+.wte-dbg-perf-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 20px;
+	padding: 0 6px;
+	background: #e5f0fb;
+	color: #2271b1;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.wte-dbg-perf-badge.is-loading {
+	background: var(--dbg-border);
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-perf-badge.is-zero {
+	background: var(--dbg-surface-alt);
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-perf-clean-btn {
+	padding: 5px 12px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #fff;
+	background: #2271b1;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.15s;
+	flex-shrink: 0;
+}
+
+.wte-dbg-perf-clean-btn:hover {
+	background: #135e96;
+}
+
+.wte-dbg-perf-clean-btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Days input */
+.wte-dbg-perf-days-wrap {
+	font-size: 12px;
+	color: var(--dbg-text-muted);
+}
+
+.wte-dbg-perf-days-wrap input[type="number"] {
+	padding: 2px 5px;
+	border: 1px solid var(--dbg-border);
+	border-radius: 3px;
+	font-size: 12px;
+	background: var(--dbg-surface);
+	color: var(--dbg-text);
+}
+
+/* ── Shared Table ── */
+.wte-dbg-perf-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+}
+
+.wte-dbg-perf-table th {
+	padding: 8px 12px;
+	text-align: left;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-perf-table td {
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--dbg-border-faint);
+	color: var(--dbg-text);
+	vertical-align: middle;
+}
+
+.wte-dbg-perf-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.wte-dbg-perf-table tbody tr:hover td {
+	background: var(--dbg-hover-bg);
+}
+
+.wte-dbg-perf-opt-name code {
+	font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: 11px;
+	color: var(--dbg-text);
+	word-break: break-all;
+}
+
+.wte-dbg-perf-opt-size,
+.wte-dbg-perf-plugin-size {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	color: var(--dbg-text-muted);
+	white-space: nowrap;
+}
+
+.wte-dbg-perf-plugin-ver {
+	color: var(--dbg-text-dim);
+	white-space: nowrap;
+}
+
+/* ── Plugin Group Header ── */
+.wte-dbg-perf-plugin-group+.wte-dbg-perf-plugin-group {
+	border-top: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-perf-plugin-group-title {
+	padding: 8px 12px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border-faint);
+}
+
+/* ── Block skeleton (autoload + plugins while loading) ── */
+.wte-dbg-perf-block-skel {
+	padding: 16px;
+}
+
+/* ── Dark mode ── */
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-perf-section {
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-perf-stat-card.is-warn {
+	background: rgba(255, 165, 0, 0.07);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-perf-action-row.is-running {
+	background: rgba(99, 179, 237, 0.07);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-perf-action-row.is-success {
+	background: rgba(74, 222, 128, 0.08);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-perf-action-row.is-error {
+	background: rgba(248, 113, 113, 0.08);
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-perf-badge {
+	background: rgba(34, 113, 177, 0.25);
+	color: #93c5fd;
+}
+
+

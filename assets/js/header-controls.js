@@ -132,7 +132,11 @@ export function initDevModeToggle( onLoadTab, getCurrentSlug ) {
 
 		if ( ! nowOn ) {
 			const slug = getCurrentSlug?.();
-			if ( slug && isDevSlug( slug ) ) {
+			// 'tinker' isn't in wpteDbg.devFeatures — its trigger button is
+			// gated by a plain data-dev attribute in layout.php, not the
+			// on_dev tabs-config system isDevSlug() reads — so it needs its
+			// own explicit check here too.
+			if ( slug && ( isDevSlug( slug ) || 'tinker' === slug ) ) {
 				onLoadTab( 'overview' );
 			}
 		}

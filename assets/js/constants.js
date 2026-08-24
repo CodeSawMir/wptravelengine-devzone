@@ -16,4 +16,6 @@ export class Icons {
 	static RESTORE       = '\u2921'; // ⤡
 	static EXPAND_ALL    = '\uff0b'; // ＋
 	static COLLAPSE_ALL  = '\uff0d'; // －
+	static TREE_VIEW     = '⎇'; // shown when the target view is the tree
+	static GRAPH_VIEW    = '●–●'; // shown when the target view is the graph
 }

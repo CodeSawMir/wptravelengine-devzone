@@ -1,0 +1,628 @@
+/* ==========================================================================
+   Tinker Tab — PHP scratchpad
+   ========================================================================== */
+
+/* ==========================================================================
+   TINKER TAB — PHP scratchpad
+   ========================================================================== */
+.wte-dbg-tinker-tab {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.wte-dbg-tinker-disabled {
+	margin: 0;
+	padding: 10px 20px;
+	font-size: 12px;
+	color: #8a6116;
+	background: #fcf9e8;
+	border-bottom: 1px solid #f0e3a8;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-tinker-disabled {
+	color: #e3b341;
+	background: #2b2413;
+	border-bottom-color: #4a3d18;
+}
+
+/* ── Split panes ── */
+.wte-dbg-tinker-split {
+	position: relative;
+	/* anchors .wte-dbg-tinker-skeleton */
+	display: flex;
+	align-items: stretch;
+	height: calc(100vh - 145px);
+	min-height: 360px;
+	/* bleed over .wte-dbg-content's 3px top border */
+	margin-top: -3px;
+}
+
+.wte-dbg-tinker-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	background: var(--dbg-surface);
+}
+
+/* Width set inline (px) by the drag handle; JS falls back to 50% on first render. */
+.wte-dbg-tinker-editor-pane {
+	flex: 0 0 auto;
+	width: 50%;
+	border-right: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-tinker-output-pane {
+	flex: 1 1 auto;
+}
+
+/* ── Drag handle between panes ── */
+.wte-dbg-tinker-resizer {
+	position: relative;
+	flex: 0 0 5px;
+	background: var(--dbg-border);
+	cursor: col-resize;
+	z-index: 3;
+}
+
+.wte-dbg-tinker-resizer::before {
+	content: '';
+	position: absolute;
+	inset: 0 -3px;
+}
+
+.wte-dbg-tinker-resizer:hover,
+.wte-dbg-tinker-resizer:focus-visible,
+.wte-dbg-tinker-split.is-resizing .wte-dbg-tinker-resizer {
+	background: var(--dbg-accent);
+	outline: none;
+}
+
+.wte-dbg-tinker-split.is-resizing {
+	cursor: col-resize;
+}
+
+.wte-dbg-tinker-split.is-resizing .wte-dbg-tinker-pane {
+	pointer-events: none;
+	user-select: none;
+}
+
+/* ── Pane head — hosts every control (no separate toolbar) ── */
+.wte-dbg-tinker-pane-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 38px;
+	padding: 4px 24px;
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border);
+	flex-shrink: 0;
+}
+
+.wte-dbg-tinker-pane-title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--dbg-text-muted);
+	flex-shrink: 0;
+}
+
+.wte-dbg-tinker-hint,
+.wte-dbg-tinker-metrics {
+	flex: 1;
+	min-width: 0;
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wte-dbg-tinker-metrics {
+	text-align: right;
+}
+
+.wte-dbg-tinker-head-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+/* ── Buttons ── */
+.wte-dbg-tinker-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	height: 26px;
+	padding: 0 10px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface);
+	border: 1px solid var(--dbg-border);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.wte-dbg-tinker-btn:hover:not(:disabled) {
+	color: var(--dbg-text);
+	border-color: var(--dbg-text-dim);
+	background: var(--dbg-hover-bg);
+}
+
+.wte-dbg-tinker-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.wte-dbg-tinker-btn.is-primary {
+	background: #1a7f37;
+	border-color: #1a7f37;
+	color: #fff;
+	font-weight: 600;
+}
+
+.wte-dbg-tinker-btn.is-primary:hover:not(:disabled) {
+	background: #2ea043;
+	border-color: #2ea043;
+	color: #fff;
+}
+
+.wte-dbg-tinker-tab.is-running .wte-dbg-tinker-btn.is-primary {
+	background: var(--dbg-text-dim);
+	border-color: var(--dbg-text-dim);
+}
+
+.wte-dbg-tinker-kbd {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 10px;
+	padding: 1px 5px;
+	border-radius: 3px;
+	background: rgba(0, 0, 0, 0.22);
+	color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Snippet controls (Output pane head) — grouped as one pill-and-icons
+   cluster instead of loose boxy fields, with a thin divider separating the
+   "which snippet" identity controls from the save/delete actions. ── */
+.wte-dbg-tinker-output-pane .wte-dbg-tinker-head-actions {
+	gap: 8px;
+	padding: 3px 4px 3px 10px;
+	background: var(--dbg-surface);
+	border: 1px solid var(--dbg-border-faint);
+	border-radius: 20px;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.wte-dbg-tinker-actions-sep {
+	width: 1px;
+	height: 16px;
+	background: var(--dbg-border);
+	flex-shrink: 0;
+}
+
+.wte-dbg-tinker-icon-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	color: var(--dbg-text-muted);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.wte-dbg-tinker-icon-btn:hover:not(:disabled) {
+	color: var(--dbg-accent);
+	background: var(--dbg-active-bg);
+	border-color: color-mix(in srgb, var(--dbg-accent) 35%, transparent);
+	transform: translateY(-1px);
+}
+
+.wte-dbg-tinker-icon-btn:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.wte-dbg-tinker-icon-btn.is-danger:hover:not(:disabled) {
+	color: #d63638;
+	background: rgba(214, 54, 56, 0.1);
+	border-color: rgba(214, 54, 56, 0.35);
+}
+
+.wte-dbg-tinker-icon-btn:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.wte-devzone-wrap select.wte-dbg-tinker-snippet-select {
+	-webkit-appearance: none;
+	appearance: none;
+	height: 24px;
+	min-height: 24px;
+	max-width: 130px;
+	padding: 0 22px 0 10px;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1;
+	color: var(--dbg-text-muted);
+	background-color: var(--dbg-surface-alt);
+	/* Native arrows ignore padding/border-radius, so they never sit right in a
+	   pill this short — draw our own, same chevron used by the status select. */
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 9px center;
+	background-size: 9px 5px;
+	border: 1px solid transparent;
+	border-radius: 12px;
+	box-shadow: none;
+	transition: background-color 0.15s, border-color 0.15s;
+}
+
+.wte-devzone-wrap select.wte-dbg-tinker-snippet-select:hover {
+	background-color: var(--dbg-hover-bg);
+}
+
+.wte-devzone-wrap select.wte-dbg-tinker-snippet-select:focus {
+	border-color: var(--dbg-accent);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%232563eb'/%3E%3C/svg%3E");
+	outline: none;
+}
+
+.wte-devzone-wrap.wte-dbg-dark select.wte-dbg-tinker-snippet-select {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+}
+
+.wte-devzone-wrap.wte-dbg-dark select.wte-dbg-tinker-snippet-select:focus {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2360a5fa'/%3E%3C/svg%3E");
+}
+
+.wte-devzone-wrap input[type="text"].wte-dbg-tinker-name {
+	width: 96px;
+	height: 24px;
+	min-height: 24px;
+	margin: 0;
+	padding: 0 10px;
+	font-size: 11px;
+	line-height: 1;
+	color: var(--dbg-text);
+	background-color: var(--dbg-surface-alt);
+	border: 1px solid transparent;
+	border-radius: 12px;
+	box-shadow: none;
+	transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.wte-devzone-wrap input[type="text"].wte-dbg-tinker-name::placeholder {
+	color: var(--dbg-text-dim);
+}
+
+.wte-devzone-wrap input[type="text"].wte-dbg-tinker-name:hover {
+	background-color: var(--dbg-hover-bg);
+}
+
+.wte-devzone-wrap input[type="text"].wte-dbg-tinker-name:focus {
+	background-color: var(--dbg-surface);
+	border-color: var(--dbg-accent);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+	outline: none;
+}
+
+/* Static "<?php" — purely decorative, lives outside .wte-dbg-tinker-editor
+   entirely so it's never part of the CodeMirror document (no selection,
+   no editing, no cursor). Syntax highlighting doesn't depend on it either —
+   see the mode's startOpen option in tinker-tab.js. */
+.wte-dbg-tinker-php-tag {
+	flex-shrink: 0;
+	padding: 4px 14px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 13px;
+	color: var(--dbg-text-dim);
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border-faint);
+	user-select: none;
+}
+
+/* ── Editor with gutter ── */
+.wte-dbg-tinker-editor {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.wte-dbg-tinker-gutter {
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	padding: 12px 8px 12px 12px;
+	overflow: hidden;
+	text-align: right;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 13px;
+	line-height: 1.6;
+	color: var(--dbg-text-dim);
+	background: var(--dbg-surface-alt);
+	border-right: 1px solid var(--dbg-border-faint);
+	user-select: none;
+}
+
+.wte-devzone-wrap textarea.wte-dbg-tinker-code {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	padding: 12px 14px;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	outline: none;
+	resize: none;
+	background: var(--dbg-surface);
+	color: var(--dbg-text);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 13px;
+	line-height: 1.6;
+	tab-size: 4;
+	white-space: pre;
+	overflow: auto;
+}
+
+/* CodeMirror (WordPress core's bundled copy) takes over once .has-codemirror is
+   set — the manual gutter is fallback-only, for when it can't load. */
+.wte-dbg-tinker-tab.has-codemirror .wte-dbg-tinker-gutter {
+	display: none;
+}
+
+.wte-dbg-tinker-editor .CodeMirror {
+	flex: 1;
+	min-width: 0;
+	width: 100%;
+	height: 100%;
+	background: var(--dbg-surface) !important;
+	color: var(--dbg-text) !important;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.wte-dbg-tinker-editor .CodeMirror-gutters {
+	background: var(--dbg-surface-alt) !important;
+	border-right: 1px solid var(--dbg-border-faint);
+}
+
+.wte-dbg-tinker-editor .CodeMirror-linenumber {
+	color: var(--dbg-text-dim);
+}
+
+.wte-dbg-tinker-editor .CodeMirror-cursor {
+	border-left-color: var(--dbg-text);
+}
+
+.wte-dbg-tinker-editor .CodeMirror-selected {
+	background: var(--dbg-active-bg);
+}
+
+.wte-dbg-tinker-editor .CodeMirror-activeline-background {
+	background: var(--dbg-hover-bg);
+}
+
+.wte-dbg-tinker-editor .CodeMirror-matchingbracket {
+	color: var(--dbg-accent) !important;
+	font-weight: 700;
+}
+
+/* ── Output ── */
+.wte-dbg-tinker-output {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: 12px 14px;
+	background: var(--dbg-surface);
+}
+
+/* Confined to the output box — never covers the code pane or pane heads. */
+.wte-dbg-tinker-loader {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--dbg-surface);
+	z-index: 2;
+}
+
+.wte-dbg-tinker-block {
+	margin-bottom: 12px;
+	border: 1px solid var(--dbg-border);
+	border-radius: 5px;
+	overflow: hidden;
+}
+
+.wte-dbg-tinker-block-label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 10px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface-alt);
+	border-bottom: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-tinker-block-body {
+	margin: 0;
+	padding: 10px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 12px;
+	line-height: 1.55;
+	color: var(--dbg-text);
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow-x: auto;
+}
+
+/* Deliberately still pre-wrap, not normal: print_r()/var_dump() echo plain text
+   whose indentation and line breaks are meaningful. Actual HTML tags in the
+   output still parse and render as real elements regardless — white-space
+   only governs how whitespace *characters* in text nodes are drawn, not
+   whether markup gets parsed — so this doesn't break literal echoed HTML. */
+
+/* ── "Printed output" block — the plainest of the four, gets its own accent
+   so it doesn't read as an unstyled leftover next to the colored ones. ── */
+.wte-dbg-tinker-block.is-output {
+	border-color: #2271b1;
+}
+
+.wte-dbg-tinker-block.is-output .wte-dbg-tinker-block-label {
+	color: #135e96;
+	background: #eaf3fb;
+	border-bottom-color: #2271b1;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-tinker-block.is-output .wte-dbg-tinker-block-label {
+	color: #7eb8f7;
+	background: #0d2438;
+}
+
+/* Return-value tree (UnserTree) — same collapsible view the Query tab's
+   beautifier uses, so let it lay out with its own row/key/value styles
+   instead of the monospace pre-wrap block used for scalars. */
+.wte-dbg-tinker-block-body.is-tree {
+	padding: 4px 6px;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	white-space: normal;
+	overflow-x: visible;
+}
+
+.wte-dbg-tinker-block.is-result {
+	border-color: #2ea043;
+}
+
+.wte-dbg-tinker-block.is-result .wte-dbg-tinker-block-label {
+	color: #1a7f37;
+	background: #eaf6ec;
+	border-bottom-color: #2ea043;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-tinker-block.is-result .wte-dbg-tinker-block-label {
+	color: #56d364;
+	background: #12261a;
+}
+
+.wte-dbg-tinker-block.is-fatal {
+	border-color: #d63638;
+}
+
+.wte-dbg-tinker-block.is-fatal .wte-dbg-tinker-block-label {
+	color: #fff;
+	background: #d63638;
+	border-bottom-color: #d63638;
+}
+
+.wte-dbg-tinker-block.is-notice {
+	border-color: #dba617;
+}
+
+.wte-dbg-tinker-block.is-notice .wte-dbg-tinker-block-label {
+	color: #8a6116;
+	background: #fcf9e8;
+	border-bottom-color: #dba617;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-tinker-block.is-notice .wte-dbg-tinker-block-label {
+	color: #e3b341;
+	background: #2b2413;
+}
+
+/* ── First-load skeleton — covers CodeMirror's own script load time ── */
+.wte-dbg-tinker-skeleton {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	display: flex;
+	gap: 24px;
+	padding: 16px 20px;
+	background: var(--dbg-surface);
+}
+
+.wte-dbg-tinker-skeleton-pane {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+@media screen and (max-width: 1200px) {
+	.wte-dbg-tinker-hint {
+		display: none;
+	}
+}
+
+@media screen and (max-width: 960px) {
+	.wte-dbg-tinker-split {
+		flex-direction: column;
+		height: auto;
+	}
+
+	.wte-dbg-tinker-editor-pane {
+		width: auto !important;
+		border-right: 0;
+		border-bottom: 1px solid var(--dbg-border);
+	}
+
+	.wte-dbg-tinker-resizer {
+		display: none;
+	}
+
+	.wte-dbg-tinker-editor,
+	.wte-dbg-tinker-output {
+		min-height: 300px;
+	}
+}
+
+/* ==========================================================================
+   Header shortcut — jump to Tinker (lives in the global header, layout.php,
+   so it's visible from any tab; styled here since it's Tinker-specific).
+   ========================================================================== */
+.wte-dbg-header-tinker-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	overflow: hidden;
+	font-family: "SFMono-Regular", Consolas, monospace;
+	font-size: 8px;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -0.5px;
+	white-space: nowrap;
+	color: rgba(255, 255, 255, 0.9);
+	background: rgba(255, 255, 255, 0.14);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	border-radius: 50%;
+	cursor: pointer;
+	flex-shrink: 0;
+	box-shadow: 0 0 10px 1px rgba(255, 255, 255, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.15);
+	transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.wte-dbg-header-tinker-btn:hover, .wte-dbg-header-tinker-btn.is-active {
+	color: #fff;
+	background: rgba(255, 255, 255, 0.24);
+	border-color: rgba(255, 255, 255, 0.5);
+	box-shadow: 0 0 14px 2px rgba(255, 255, 255, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.15);
+}

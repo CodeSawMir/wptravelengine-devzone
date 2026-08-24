@@ -2,7 +2,16 @@
 
 ## [Upcoming]
 
-> `on_dev` hot-features gating 
+> `on_dev` hot-features gating
+
+### Added
+
+- Self-update card in Marketplace — checks GitHub `main` for a newer version, one-click update
+
+### Changed
+
+- Dev Zone no longer requires WP Travel Engine — core tools work standalone; Inspector suite stays WTE-only
+- Query and Crontrol tabs only group by WP Travel Engine when WTE is active
 
 ---
 

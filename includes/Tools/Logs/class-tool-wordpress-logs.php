@@ -20,6 +20,15 @@ class ToolWordpressLogs extends AbstractTool {
 		add_action( 'wp_ajax_wpte_devzone_logs_wp_clear_log',  [ $this, 'clear_log' ] );
 	}
 
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-logs',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/logs.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
+	}
+
 	/**
 	 * Applies saved debug flags on every load while the plugin is active.
 	 * Uses ini_set() for logging/display so constants already set false in
@@ -54,6 +63,13 @@ class ToolWordpressLogs extends AbstractTool {
 		if ( ! empty( $flags['SCRIPT_DEBUG'] ) ) {
 			defined( 'SCRIPT_DEBUG' ) || define( 'SCRIPT_DEBUG', true );
 		}
+
+		// Not a WP core constant — a Dev Zone-only convenience flag checked by
+		// Admin::writes_enabled() to force-enable Tinker outside production,
+		// bypassing the wpte_devzone_allow_writes filter.
+		if ( ! empty( $flags['WP_DEVZONE_DEBUG'] ) ) {
+			defined( 'WP_DEVZONE_DEBUG' ) || define( 'WP_DEVZONE_DEBUG', true );
+		}
 	}
 
 	/**
@@ -62,7 +78,7 @@ class ToolWordpressLogs extends AbstractTool {
 	public function save_flags(): void {
 		Admin::verify_request();
 
-		$allowed  = [ 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG' ];
+		$allowed  = [ 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG', 'WP_DEVZONE_DEBUG' ];
 		$constant = strtoupper( sanitize_text_field( wp_unslash( $_POST['constant'] ?? '' ) ) );
 		$enable   = '1' === ( $_POST['value'] ?? '0' );
 

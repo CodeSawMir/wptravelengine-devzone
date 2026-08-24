@@ -99,7 +99,7 @@ function initWordpressTab( el ) {
 				}
 					DomHelper.setStatus( constant + ' \u2192 ' + ( checkbox.checked ? 'true' : 'false' ), 'success' );
 					_wpReloadingState( el );
-					setTimeout( () => window.location.reload(), 800 );
+					setTimeout( () => window.location.reload(), 2000 );
 				} )
 				.catch( () => {
 					row.classList.remove( 'is-loading' );

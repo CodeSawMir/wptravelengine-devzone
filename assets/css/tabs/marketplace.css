@@ -1,0 +1,731 @@
+/* ==========================================================================
+   Marketplace Tab
+   ========================================================================== */
+
+/* ==========================================================================
+   Marketplace Tab
+   ========================================================================== */
+
+.wte-dbg-marketplace-tab {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+/* ── Self-status card ── */
+.wte-dbg-marketplace-card.is-self {
+	border-color: #163f78;
+	box-shadow: 0 0 0 1px rgba(22, 63, 120, .25);
+}
+
+.wte-dbg-marketplace-self-status {
+	margin: 8px 0 0;
+	font-size: 12px;
+}
+
+.wte-dbg-marketplace-self-status.is-error   { color: #d63638; }
+.wte-dbg-marketplace-self-status.is-success,
+.wte-dbg-marketplace-self-status.is-ok      { color: #00a32a; }
+.wte-dbg-marketplace-self-status.is-info    { opacity: .8; }
+.wte-dbg-marketplace-self-status.is-hidden  { display: none; }
+
+.wte-dbg-marketplace-self-update.is-hidden {
+	display: none;
+}
+
+/* ── Toolbar ── */
+.wte-dbg-marketplace-toolbar {
+	display: flex;
+	align-items: center;
+	flex-wrap: nowrap;
+	padding: 0 12px;
+	gap: 8px;
+	border-bottom: 1px solid rgba(255, 255, 255, .08);
+	background: linear-gradient(135deg, #163f78 0%, #0c2c55 100%);
+	height: 50px;
+}
+
+.wte-devzone-wrap.wte-dbg-dark .wte-dbg-marketplace-toolbar {
+	background: linear-gradient(135deg, #0d2240 0%, #060f1a 100%);
+}
+
+/* Search input on dark toolbar — mirrors .wte-dbg-tabs overrides */
+.wte-dbg-marketplace-toolbar .wte-dbg-search-input {
+	background-color: rgba(255, 255, 255, .08);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+	border-color: rgba(255, 255, 255, .15);
+	color: rgba(255, 255, 255, .9);
+	box-shadow: none;
+}
+
+.wte-dbg-marketplace-toolbar .wte-dbg-search-input::placeholder {
+	color: rgba(255, 255, 255, .3);
+	font-style: normal;
+}
+
+.wte-dbg-marketplace-toolbar .wte-dbg-search-input:hover {
+	border-color: rgba(255, 255, 255, .3);
+	background-color: rgba(255, 255, 255, .11);
+}
+
+.wte-dbg-marketplace-toolbar .wte-dbg-search-input:focus {
+	background-color: rgba(255, 255, 255, .14);
+	border-color: rgba(255, 255, 255, .5);
+	box-shadow: 0 0 0 3px rgba(255, 255, 255, .08);
+}
+
+.wte-dbg-marketplace-search {
+	flex: 1;
+	max-width: 240px;
+}
+
+.wte-dbg-marketplace-token-btn {
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid rgba(255, 255, 255, .2);
+	border-radius: 14px;
+	background: rgba(255, 255, 255, .08);
+	color: rgba(255, 255, 255, .75);
+	font-size: 11px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: border-color .15s, color .15s, background .15s;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.wte-dbg-marketplace-token-btn::before {
+	content: '';
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83'/%3E%3C/svg%3E") center / contain no-repeat;
+	opacity: .65;
+	flex-shrink: 0;
+}
+
+.wte-dbg-marketplace-token-btn::before {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83'/%3E%3C/svg%3E");
+	opacity: 1;
+}
+
+.wte-dbg-marketplace-token-btn::after {
+	content: '';
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+	flex-shrink: 0;
+	transition: transform .2s;
+}
+
+.wte-dbg-marketplace-token-btn:hover {
+	color: rgba(255, 255, 255, 1);
+	border-color: rgba(255, 255, 255, .4);
+	background: rgba(255, 255, 255, .13);
+}
+
+.wte-dbg-marketplace-token-btn.has-token {
+	border-color: rgba(74, 222, 128, .5);
+	color: #4ade80;
+	background: rgba(74, 222, 128, .12);
+}
+
+.wte-dbg-marketplace-token-btn.has-token::before {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+	opacity: 1;
+}
+
+.wte-dbg-marketplace-token-btn.has-token::after {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+}
+
+.wte-dbg-marketplace-token-btn.is-open::after {
+	transform: rotate(90deg);
+}
+
+/* ── Token wrap — anchor for the dropdown panel ── */
+.wte-dbg-marketplace-token-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+/* ── Token panel — drops directly below the token button ── */
+.wte-dbg-marketplace-token-panel {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 8px);
+	width: 340px;
+	z-index: 200;
+	background: var(--dbg-surface);
+	border: 1px solid var(--dbg-border);
+	border-radius: 12px;
+	box-shadow: 0 12px 36px rgba(0, 0, 0, .16), 0 3px 8px rgba(0, 0, 0, .08);
+	overflow: hidden;
+}
+
+.wte-dbg-marketplace-token-panel.is-hidden {
+	display: none;
+}
+
+/* Panel header bar */
+.wte-dbg-marketplace-token-panel::before {
+	content: '';
+	display: block;
+	height: 3px;
+	background: linear-gradient(90deg, var(--dbg-accent) 0%, #7c3aed 100%);
+}
+
+/* Inner padding wrapper */
+.wte-dbg-marketplace-token-info {
+	margin: 0;
+	padding: 14px 16px 12px;
+	font-size: 11.5px;
+	color: var(--dbg-text-muted);
+	line-height: 1.6;
+	border-bottom: 1px solid var(--dbg-border-faint);
+}
+
+.wte-dbg-marketplace-token-info code {
+	font-size: 10.5px;
+	padding: 1px 4px;
+	border-radius: 3px;
+	background: var(--dbg-surface-alt);
+	border: 1px solid var(--dbg-border-faint);
+	color: var(--dbg-text);
+}
+
+/* Input + buttons */
+.wte-dbg-marketplace-token-row {
+	display: flex;
+	gap: 7px;
+	align-items: center;
+	padding: 12px 16px;
+	margin: 0;
+}
+
+.wte-dbg-marketplace-token-input {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Reset dark-bar cascade — panel has a light surface, no search icon */
+.wte-dbg-marketplace-token-panel .wte-dbg-search-input {
+	background-color: var(--dbg-bg);
+	background-image: none;
+	background-position: unset;
+	border-color: var(--dbg-border);
+	color: var(--dbg-text);
+	border-radius: 7px;
+	padding: 0 10px;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, .04);
+}
+
+.wte-dbg-marketplace-token-panel .wte-dbg-search-input::placeholder {
+	color: var(--dbg-text-dim);
+	font-style: italic;
+}
+
+.wte-dbg-marketplace-token-panel .wte-dbg-search-input:hover {
+	border-color: var(--dbg-text-muted);
+	background-color: var(--dbg-bg);
+}
+
+.wte-dbg-marketplace-token-panel .wte-dbg-search-input:focus {
+	border-color: var(--dbg-accent);
+	background-color: var(--dbg-bg);
+	background-image: none;
+	background-position: unset;
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, .12);
+}
+
+.wte-dbg-marketplace-token-connect {
+	height: 32px;
+	padding: 0 14px;
+	border-radius: 7px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	border: none;
+	background: var(--dbg-accent);
+	color: #fff;
+	white-space: nowrap;
+	transition: background .15s, opacity .15s;
+}
+
+.wte-dbg-marketplace-token-connect:hover {
+	background: var(--dbg-accent-dark);
+}
+
+.wte-dbg-marketplace-token-connect:disabled {
+	opacity: .55;
+	cursor: default;
+}
+
+/* Disconnect — inline beside Connect */
+.wte-dbg-marketplace-token-clear {
+	height: 32px;
+	padding: 0 12px;
+	border-radius: 7px;
+	font-size: 12px;
+	font-weight: 500;
+	border: 1px solid var(--dbg-border);
+	background: transparent;
+	color: var(--dbg-text-dim);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: color .15s, border-color .15s, background .15s;
+}
+
+.wte-dbg-marketplace-token-clear:hover {
+	color: #dc2626;
+	border-color: #dc2626;
+	background: rgba(220, 38, 38, .05);
+}
+
+/* Token status line */
+.wte-dbg-marketplace-token-status {
+	margin: 0 16px 12px;
+	font-size: 12px;
+	font-weight: 500;
+	padding: 7px 10px;
+	border-radius: 7px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wte-dbg-marketplace-token-status.is-hidden {
+	display: none;
+}
+
+.wte-dbg-marketplace-token-status.is-ok {
+	color: #16a34a;
+	background: rgba(22, 163, 74, .09);
+	border: 1px solid rgba(22, 163, 74, .2);
+}
+
+.wte-dbg-marketplace-token-status.is-error {
+	color: #dc2626;
+	background: rgba(220, 38, 38, .08);
+	border: 1px solid rgba(220, 38, 38, .2);
+}
+
+.wte-dbg-marketplace-token-status.is-pending {
+	color: var(--dbg-text-muted);
+	background: var(--dbg-surface-alt);
+	border: 1px solid var(--dbg-border-faint);
+}
+
+/* ── Filter bar ── */
+.wte-dbg-marketplace-filters {
+	display: flex;
+	gap: 4px;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-marketplace-filter {
+	height: 26px;
+	padding: 0 14px;
+	border-radius: 13px;
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+	background: transparent;
+	border: 1px solid transparent;
+	color: var(--dbg-text-muted);
+	transition: background .15s, color .15s, border-color .15s;
+}
+
+.wte-dbg-marketplace-filter:hover {
+	background: var(--dbg-hover-bg);
+	color: var(--dbg-text);
+}
+
+.wte-dbg-marketplace-filter.is-active {
+	background: var(--dbg-active-bg);
+	border-color: var(--dbg-accent);
+	color: var(--dbg-accent);
+}
+
+/* ── Plugin grid ── */
+.wte-dbg-marketplace-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+	gap: 14px;
+	padding: 16px;
+	align-content: start;
+	overflow-y: auto;
+	flex: 1;
+}
+
+/* ── Plugin card ── */
+.wte-dbg-marketplace-card {
+	display: flex;
+	flex-direction: column;
+	background: var(--dbg-surface);
+	border: 1px solid var(--dbg-border);
+	border-radius: 12px;
+	padding: 0;
+	overflow: hidden;
+	transition: box-shadow .2s, transform .2s, border-color .2s;
+	position: relative;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+
+.wte-dbg-marketplace-card:hover {
+	box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+	transform: translateY(-3px);
+	border-color: var(--dbg-border-mid, var(--dbg-border));
+}
+
+.wte-dbg-marketplace-card.is-featured {
+	border-color: var(--dbg-accent);
+	box-shadow: 0 0 0 1px var(--dbg-accent), 0 1px 3px rgba(0, 0, 0, .06);
+}
+
+.wte-dbg-marketplace-card.is-featured::before {
+	content: '';
+	display: block;
+	height: 3px;
+	background: linear-gradient(90deg, var(--dbg-accent), #60a5fa);
+}
+
+.wte-dbg-marketplace-card.is-active {
+	border-color: #16a34a;
+	box-shadow: 0 0 0 1px rgba(22, 163, 74, .2), 0 1px 3px rgba(0, 0, 0, .06);
+}
+
+.wte-dbg-marketplace-card.is-active::before {
+	content: '';
+	display: block;
+	height: 3px;
+	background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.wte-dbg-marketplace-card.is-loading {
+	opacity: .6;
+	pointer-events: none;
+}
+
+/* Card inner padding wrapper */
+.wte-dbg-marketplace-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+	flex: 1;
+}
+
+/* Card header row: avatar + name/author + stars */
+.wte-dbg-marketplace-card-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+/* Auto-generated initials avatar */
+.wte-dbg-marketplace-card-avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	font-weight: 700;
+	color: #fff;
+	letter-spacing: -.01em;
+	text-transform: uppercase;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+}
+
+/* Title area next to avatar */
+.wte-dbg-marketplace-card-title {
+	flex: 1;
+	min-width: 0;
+}
+
+.wte-dbg-marketplace-card-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--dbg-text);
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wte-dbg-marketplace-card-name a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.wte-dbg-marketplace-card-name a:hover {
+	text-decoration: underline;
+}
+
+.wte-dbg-marketplace-card-author-wrap {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wte-dbg-marketplace-card-author {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	margin-top: 3px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wte-dbg-marketplace-card-title-meta {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 5px;
+}
+
+/* Stars */
+.wte-dbg-marketplace-card-stars {
+	font-size: 11px;
+	color: var(--dbg-text-muted);
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	margin-top: 1px;
+}
+
+.wte-dbg-marketplace-card-stars::before {
+	content: '\2605';
+	color: #f59e0b;
+	font-size: 12px;
+}
+
+/* GitHub repo link icon in card header */
+.wte-dbg-marketplace-card-repo-link {
+	display: flex;
+	align-items: center;
+	align-self: flex-start;
+	flex-shrink: 0;
+	color: var(--dbg-text-dim);
+	opacity: .45;
+	margin-top: 2px;
+	transition: opacity .15s, color .15s;
+}
+
+.wte-dbg-marketplace-card-repo-link:hover {
+	color: var(--dbg-text);
+	opacity: 1;
+}
+
+/* Source badge (registry / org only — community has no badge) */
+.wte-dbg-marketplace-source-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 10px;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	align-self: flex-start;
+}
+
+.wte-dbg-marketplace-source-badge.badge-registry {
+	background: rgba(34, 113, 177, .1);
+	color: var(--dbg-accent);
+}
+
+.wte-dbg-marketplace-source-badge.badge-org {
+	background: rgba(124, 58, 237, .1);
+	color: #7c3aed;
+}
+
+/* Description */
+.wte-dbg-marketplace-card-desc {
+	margin: 0;
+	font-size: 12px;
+	color: var(--dbg-text-muted);
+	line-height: 1.6;
+	flex: 1;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+/* Meta row (version) */
+.wte-dbg-marketplace-card-meta {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.wte-dbg-marketplace-card-ver {
+	font-size: 11px;
+	color: var(--dbg-text-dim);
+	font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+	background: var(--dbg-surface-alt);
+	padding: 2px 7px;
+	border-radius: 5px;
+	border: 1px solid var(--dbg-border-faint);
+}
+
+/* Tags */
+.wte-dbg-marketplace-card-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.wte-dbg-marketplace-tag {
+	font-size: 10px;
+	padding: 2px 8px;
+	border-radius: 10px;
+	background: var(--dbg-surface-alt);
+	border: 1px solid var(--dbg-border-faint);
+	color: var(--dbg-text-dim);
+	letter-spacing: .01em;
+}
+
+/* Footer */
+.wte-dbg-marketplace-card-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 10px 16px;
+	border-top: 1px solid var(--dbg-border-faint);
+	background: var(--dbg-surface-alt);
+}
+
+.wte-dbg-marketplace-card-actions {
+	display: flex;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+.wte-dbg-marketplace-status {
+	font-size: 11px;
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.wte-dbg-marketplace-status::before {
+	content: '';
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.wte-dbg-marketplace-status.is-active::before {
+	background: #16a34a;
+	box-shadow: 0 0 0 2px rgba(22, 163, 74, .2);
+}
+
+.wte-dbg-marketplace-status.is-active {
+	color: #16a34a;
+}
+
+.wte-dbg-marketplace-status.is-installed::before {
+	background: var(--dbg-accent);
+	box-shadow: 0 0 0 2px rgba(34, 113, 177, .15);
+}
+
+.wte-dbg-marketplace-status.is-installed {
+	color: var(--dbg-accent);
+}
+
+/* Action button */
+.wte-dbg-marketplace-action-btn {
+	height: 28px;
+	padding: 0 14px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+	background: var(--dbg-accent);
+	color: #fff;
+	border: none;
+	white-space: nowrap;
+	transition: background .15s, transform .1s;
+}
+
+.wte-dbg-marketplace-action-btn:hover:not( :disabled) {
+	background: var(--dbg-accent-dark);
+	transform: translateY(-1px);
+}
+
+.wte-dbg-marketplace-action-btn:active:not( :disabled) {
+	transform: translateY(0);
+}
+
+.wte-dbg-marketplace-action-btn:disabled {
+	opacity: .5;
+	cursor: default;
+}
+
+/* Activate button variant */
+.wte-dbg-marketplace-action-btn.is-activate {
+	background: transparent;
+	color: var(--dbg-accent);
+	border: 1px solid var(--dbg-accent);
+}
+
+.wte-dbg-marketplace-action-btn.is-activate:hover:not( :disabled) {
+	background: var(--dbg-active-bg);
+}
+
+/* Reinstall button variant */
+.wte-dbg-marketplace-action-btn.is-reinstall {
+	background: transparent;
+	color: var(--dbg-text-muted);
+	border: 1px solid var(--dbg-border);
+}
+
+.wte-dbg-marketplace-action-btn.is-reinstall:hover:not( :disabled) {
+	color: var(--dbg-text);
+	border-color: var(--dbg-text-muted);
+}
+
+/* Deactivate button variant */
+.wte-dbg-marketplace-action-btn.is-deactivate {
+	background: transparent;
+	color: #d97706;
+	border: 1px solid rgba(217, 119, 6, .35);
+}
+
+.wte-dbg-marketplace-action-btn.is-deactivate:hover:not( :disabled) {
+	background: rgba(217, 119, 6, .06);
+	border-color: #d97706;
+}
+
+/* Delete button variant */
+.wte-dbg-marketplace-action-btn.is-delete {
+	background: transparent;
+	color: #dc2626;
+	border: 1px solid rgba(220, 38, 38, .35);
+}
+
+.wte-dbg-marketplace-action-btn.is-delete:hover:not( :disabled) {
+	background: rgba(220, 38, 38, .06);
+	border-color: #dc2626;
+}
+
+/* Skeleton card */
+.wte-dbg-marketplace-card-skel {
+	pointer-events: none;
+	transform: none !important;
+}
+

@@ -202,6 +202,7 @@ export class PerfTab {
 		btn.disabled    = true;
 		btn.textContent = 'Cleaning\u2026';
 		row?.classList.add( 'is-running' );
+		DomHelper.setStatus( 'Cleaning\u2026', 'info' );
 
 		this._post( 'wpte_devzone_perf_do_cleanup', { cleanup_action: action } )
 			.then( ( res ) => {
@@ -313,6 +314,7 @@ export class PerfTab {
 		btn.disabled    = true;
 		btn.textContent = 'Cleaning\u2026';
 		row?.classList.add( 'is-running' );
+		DomHelper.setStatus( 'Cleaning\u2026', 'info' );
 
 		this._post( 'wpte_devzone_perf_do_wte_cleanup', body )
 			.then( ( res ) => {

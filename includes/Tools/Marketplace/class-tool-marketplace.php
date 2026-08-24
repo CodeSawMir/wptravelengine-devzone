@@ -35,6 +35,9 @@ class ToolMarketplace extends AbstractTool {
 	/** WP option key that tracks plugins installed via the marketplace. */
 	private const INSTALLED_OPTION = 'wpte_devzone_marketplace_installed';
 
+	/** Transient key for the cached remote version check (self-update). */
+	private const SELF_UPDATE_TRANSIENT = 'wpte_dzm_self_version';
+
 	public function get_slug(): string     { return 'marketplace'; }
 	public function get_label(): string    { return __( 'Marketplace', 'wptravelengine-devzone' ); }
 	public function get_template(): string { return WPTE_DEVZONE_DIR . 'templates/tab-marketplace.php'; }
@@ -49,9 +52,17 @@ class ToolMarketplace extends AbstractTool {
 		add_action( 'wp_ajax_wpte_devzone_marketplace_bust_cache', [ $this, 'bust_cache' ] );
 		add_action( 'wp_ajax_wpte_devzone_marketplace_save_token',   [ $this, 'save_token' ] );
 		add_action( 'wp_ajax_wpte_devzone_marketplace_verify_token', [ $this, 'verify_token' ] );
+		add_action( 'wp_ajax_wpte_devzone_self_check_update',        [ $this, 'self_check_update' ] );
+		add_action( 'wp_ajax_wpte_devzone_self_update',               [ $this, 'self_update' ] );
 	}
 
 	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'wpte-devzone-marketplace',
+			WPTE_DEVZONE_URL . 'assets/css/tabs/marketplace.css',
+			[ 'wpte-devzone' ],
+			WPTE_DEVZONE_VERSION
+		);
 		wp_enqueue_script(
 			'wpte-devzone-marketplace',
 			WPTE_DEVZONE_URL . 'assets/js/tabs/marketplace-tab.js',
@@ -360,6 +371,108 @@ class ToolMarketplace extends AbstractTool {
 		update_option( 'wpte_dz_github_user', $user_data, false );
 
 		wp_send_json_success( $user_data );
+	}
+
+	/**
+	 * Compare Dev Zone's own installed version against the Version header on
+	 * the remote 'main' branch and report whether an update is available.
+	 */
+	public function self_check_update(): void {
+		Admin::verify_request();
+
+		$latest = get_transient( self::SELF_UPDATE_TRANSIENT );
+		if ( false === $latest ) {
+			$latest = $this->fetch_self_remote_version();
+			set_transient( self::SELF_UPDATE_TRANSIENT, $latest, HOUR_IN_SECONDS );
+		}
+
+		if ( is_wp_error( $latest ) ) {
+			wp_send_json_error( [ 'message' => $latest->get_error_message() ] );
+		}
+
+		wp_send_json_success( [
+			'current'          => WPTE_DEVZONE_VERSION,
+			'latest'           => $latest,
+			'update_available' => version_compare( $latest, WPTE_DEVZONE_VERSION, '>' ),
+			'repo'             => self::get_self_repo(),
+		] );
+	}
+
+	/**
+	 * Download the 'main' branch zipball of Dev Zone's own repo and overwrite
+	 * this plugin's own directory in place.
+	 *
+	 * This plugin lives outside WP_PLUGIN_DIR (nested under .wpte-devzone/),
+	 * so it isn't a normal WP-recognized plugin and Plugin_Upgrader can't
+	 * target it — the copy has to be done directly.
+	 */
+	public function self_update(): void {
+		Admin::verify_request();
+
+		$client  = $this->get_github_client();
+		$zip_url = $client->resolve_zip_redirect(
+			GithubClient::API_BASE . '/repos/' . self::get_self_repo() . '/zipball/main'
+		);
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		WP_Filesystem();
+		global $wp_filesystem;
+
+		$tmp_zip = download_url( $zip_url );
+		if ( is_wp_error( $tmp_zip ) ) {
+			wp_send_json_error( [ 'message' => $tmp_zip->get_error_message() ] );
+		}
+
+		$tmp_dir      = trailingslashit( get_temp_dir() ) . 'wpte-devzone-self-update-' . wp_generate_password( 8, false );
+		$unzip_result = unzip_file( $tmp_zip, $tmp_dir );
+		wp_delete_file( $tmp_zip );
+
+		if ( is_wp_error( $unzip_result ) ) {
+			wp_send_json_error( [ 'message' => $unzip_result->get_error_message() ] );
+		}
+
+		// GitHub zipballs extract into a single '{repo}-{sha}' subfolder.
+		$entries = glob( $tmp_dir . '/*', GLOB_ONLYDIR );
+		$source  = $entries[0] ?? $tmp_dir;
+
+		$copied = copy_dir( $source, WPTE_DEVZONE_DIR );
+		$wp_filesystem->delete( $tmp_dir, true );
+
+		if ( is_wp_error( $copied ) ) {
+			wp_send_json_error( [ 'message' => $copied->get_error_message() ] );
+		}
+
+		delete_transient( self::SELF_UPDATE_TRANSIENT );
+
+		wp_send_json_success( [ 'message' => __( 'Dev Zone updated. Reloading…', 'wptravelengine-devzone' ) ] );
+	}
+
+	/** GitHub repo slug ('owner/repo') this plugin updates itself from. */
+	public static function get_self_repo(): string {
+		return apply_filters( 'wpte_devzone_self_update_repo', 'CodeSawMir/wptravelengine-devzone-plugin' );
+	}
+
+	/**
+	 * Fetch the Version header from this plugin's own main file on the
+	 * remote 'main' branch via the GitHub Contents API.
+	 *
+	 * @return string|\WP_Error
+	 */
+	private function fetch_self_remote_version() {
+		$client = $this->get_github_client();
+		$url    = GithubClient::API_BASE . '/repos/' . self::get_self_repo() . '/contents/wptravelengine-devzone.php?ref=main';
+
+		$result = $client->get( $url );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		$content = ! empty( $result['content'] ) ? base64_decode( str_replace( "\n", '', $result['content'] ) ) : '';
+		if ( ! $content || ! preg_match( '/define\(\s*[\'"]WPTE_DEVZONE_VERSION[\'"]\s*,\s*[\'"]([0-9.]+)[\'"]\s*\)/', $content, $m ) ) {
+			return new \WP_Error( 'self_update_parse_error', __( 'Could not read the remote plugin version.', 'wptravelengine-devzone' ) );
+		}
+
+		return $m[1];
 	}
 
 	// -------------------------------------------------------------------------

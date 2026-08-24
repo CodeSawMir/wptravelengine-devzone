@@ -4,7 +4,7 @@ namespace WPTravelEngineDevZone;
 
 use WPTravelEngineDevZone\Tools\AbstractPostTool;
 use WPTravelEngineDevZone\Traits\ValueHelperTrait;
-use WPTravelEngine\Utilities\ArrayUtility;
+use WPTravelEngineDevZone\Utils\ArrayOps;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -153,7 +153,7 @@ class SharedAjax {
 		$old_value = $current;
 
 		if ( $key_path ) {
-			$arr       = ArrayUtility::make( (array) $current );
+			$arr       = ArrayOps::make( (array) $current );
 			$new_value = $this->cast_value( $value, $arr->get( $key_path ) );
 			$arr->set( $key_path, $new_value );
 			$current   = $arr->value();

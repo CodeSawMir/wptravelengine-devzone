@@ -55,25 +55,11 @@ class Admin {
 	 * @return array<string,mixed>
 	 */
 	public static function get_tabs(): array {
-		$tabs = apply_filters( 'wpte_devzone_tabs', [
+		$tabs = [
 			'marketplace' => [
 				'title' => __( 'Market', 'wptravelengine-devzone' ),
 				'priority' => 2,
 				'on_dev' => true,
-			],
-			// 'perf'    => [
-			// 	'title'  => __( 'Perf', 'wptravelengine-devzone' ),
-			// 	'on_dev' => true,
-			// ],
-			'devzone' => [
-				'title'   => __( 'Inspect', 'wptravelengine-devzone' ),
-				'subtabs' => [
-					'overview'  => __( 'Overview',   'wptravelengine-devzone' ),
-					'trips'     => __( 'Trips',       'wptravelengine-devzone' ),
-					'bookings'  => __( 'Bookings',    'wptravelengine-devzone' ),
-					'payments'  => __( 'Payments',    'wptravelengine-devzone' ),
-					'customers' => __( 'Customers',   'wptravelengine-devzone' ),
-				],
 			],
 			'query'   => __( 'Query', 'wptravelengine-devzone' ),
 			'cron'    => __( 'Crontrol',     'wptravelengine-devzone' ),
@@ -82,14 +68,41 @@ class Admin {
 				'priority' => 10,
 				'subtabs'  => [
 					'wordpress'      => [ 'title' => __( 'WordPress', 'wptravelengine-devzone' ), 'on_dev' => true ],
-					'wptravelengine' => __( 'WP Travel Engine', 'wptravelengine-devzone' ),
 				],
-			]
-		] );
+			],
+			'tinker' => [
+				'title'    => __( 'Tinker', 'wptravelengine-devzone' ),
+				'priority' => 11,
+				// 'on_dev' => true
+			],
+		];
+
+		// Inspector tab and WTE log subtab only make sense with WP Travel
+		// Engine's data model present.
+		if ( Plugin::is_wte_active() ) {
+			// 'perf'    => [
+			// 	'title'  => __( 'Perf', 'wptravelengine-devzone' ),
+			// 	'on_dev' => true,
+			// ],
+			$tabs['devzone'] = [
+				'title'   => __( 'Inspect', 'wptravelengine-devzone' ),
+				'priority' => 5,
+				'subtabs' => [
+					'overview'  => __( 'Overview',   'wptravelengine-devzone' ),
+					'trips'     => __( 'Trips',       'wptravelengine-devzone' ),
+					'bookings'  => __( 'Bookings',    'wptravelengine-devzone' ),
+					'payments'  => __( 'Payments',    'wptravelengine-devzone' ),
+					'customers' => __( 'Customers',   'wptravelengine-devzone' ),
+				],
+			];
+			$tabs['logs']['subtabs']['wptravelengine'] = __( 'WP Travel Engine', 'wptravelengine-devzone' );
+		}
+
+		$tabs = apply_filters( 'wpte_devzone_tabs', $tabs );
 
 		uasort( $tabs, static function ( $a, $b ): int {
-			$pa = is_array( $a ) ? ( (int) ( $a['priority'] ?? 5 ) ) : 5;
-			$pb = is_array( $b ) ? ( (int) ( $b['priority'] ?? 5 ) ) : 5;
+			$pa = is_array( $a ) ? ( (float) ( $a['priority'] ?? 6 ) ) : 6;
+			$pb = is_array( $b ) ? ( (float) ( $b['priority'] ?? 6 ) ) : 6;
 			return $pa <=> $pb;
 		} );
 
@@ -145,6 +158,59 @@ class Admin {
 		check_ajax_referer( self::NONCE );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => 'Forbidden' ], 403 );
+		}
+	}
+
+	/**
+	 * Whether the Dev Zone's code-execution surface is permitted here.
+	 *
+	 * On production this is a HARD block with no escape hatch — deliberately
+	 * not filterable, because Tinker executes arbitrary PHP and that must never
+	 * be reachable on a live client site regardless of what a stray mu-plugin
+	 * or a copy-pasted filter asks for.
+	 *
+	 * wp_get_environment_type() returns 'production' when WP_ENVIRONMENT_TYPE
+	 * is unset, so an ordinary live site is blocked with no configuration.
+	 *
+	 * Off production this is on by default, and the filter can only ever
+	 * tighten it further — it cannot grant execution anywhere it isn't already
+	 * allowed:
+	 *   add_filter( 'wpte_devzone_allow_writes', '__return_false' );
+	 *
+	 * Scope note: this currently guards Tinker's three endpoints only. The
+	 * other mutating endpoints (arbitrary-table writes via db_action, plugin
+	 * install/activate/delete, on-demand cron_run, bulk import_trips, option
+	 * writes, debug-flag writes) remain guarded by manage_options + nonce alone
+	 * and ARE live on production. Widening this gate to cover them is a
+	 * deliberate open decision, not an oversight.
+	 */
+	public static function writes_enabled(): bool {
+		if ( defined( 'WP_DEVZONE_DEBUG' ) && WP_DEVZONE_DEBUG ) {
+			return true;
+		}
+		if ( 'production' === wp_get_environment_type() ) {
+			return false;
+		}
+		return false !== apply_filters( 'wpte_devzone_allow_writes', true );
+	}
+
+	/**
+	 * Verifies nonce + capability, then the unbypassable production gate.
+	 *
+	 * Used by Tinker's run/save/delete endpoints. Available to any other
+	 * handler that should inherit the same hard production block.
+	 */
+	public static function verify_write_request(): void {
+		self::verify_request();
+
+		if ( ! self::writes_enabled() ) {
+			wp_send_json_error(
+				[
+					'message'   => __( 'Tinker is disabled on this environment.', 'wptravelengine-devzone' ),
+					'read_only' => true,
+				],
+				403
+			);
 		}
 	}
 
@@ -336,6 +402,9 @@ class Admin {
 			'post_types'   => $post_types,
 			'devFeatures'  => self::get_dev_features(),
 			'groupSubtabs' => $group_subtabs,
+			'wteActive'    => Plugin::is_wte_active(),
+			'selfVersion'  => WPTE_DEVZONE_VERSION,
+			'selfRepo'     => Tools\Marketplace\ToolMarketplace::get_self_repo(),
 		] );
 
 		// Let each tool enqueue its own assets (e.g. ToolQuery loads tabs/query.js).
